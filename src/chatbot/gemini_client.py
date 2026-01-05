@@ -18,7 +18,7 @@ class GeminiChatbot:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model_name: str = "gemini-1.5-flash",
+        model_name: str = "gemini-1.5-pro",
     ):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
         if not self.api_key:

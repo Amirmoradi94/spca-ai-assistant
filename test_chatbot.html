@@ -448,6 +448,24 @@
                 <button class="btn btn-secondary" onclick="sendQuickQuery('What are your opening hours?')">🕒 Hours</button>
             </div>
 
+            <div class="info-section">
+                <h3>🔧 Scraper Controls</h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Scrape Animals:</p>
+                <button class="btn btn-secondary" onclick="scrapeAnimals('all')" style="width: 100%; margin-bottom: 5px;">🐾 All Animals</button>
+                <button class="btn btn-secondary" onclick="scrapeAnimals('cats')" style="width: 48%; margin-right: 4%;">🐱 Cats</button>
+                <button class="btn btn-secondary" onclick="scrapeAnimals('dogs')" style="width: 48%;">🐕 Dogs</button>
+                <button class="btn btn-secondary" onclick="scrapeAnimals('rabbits')" style="width: 48%; margin-right: 4%; margin-top: 5px;">🐰 Rabbits</button>
+                <button class="btn btn-secondary" onclick="scrapeAnimals('birds')" style="width: 48%; margin-top: 5px;">🦜 Birds</button>
+                <button class="btn btn-secondary" onclick="scrapeAnimals('small-animals')" style="width: 100%; margin-top: 5px;">🐹 Small Animals</button>
+
+                <p style="font-size: 12px; color: #666; margin-top: 12px; margin-bottom: 8px;">General Content:</p>
+                <button class="btn btn-secondary" onclick="scrapeContent()" style="width: 100%;">📄 Scrape General Content</button>
+
+                <p style="font-size: 12px; color: #666; margin-top: 12px; margin-bottom: 8px;">Sync & Refresh:</p>
+                <button class="btn btn-secondary" onclick="syncToGoogle()" style="width: 100%; margin-bottom: 5px;">☁️ Sync to Google</button>
+                <button class="btn btn-secondary" onclick="refreshFiles()" style="width: 100%;">🔄 Refresh Files</button>
+            </div>
+
             <div class="log-console scrollbar" id="logConsole"></div>
         </div>
 
@@ -740,6 +758,141 @@ Try asking about:
             } catch (error) {
                 log('ERROR', `Failed to end session: ${error.message}`);
                 addErrorMessage(`Failed to end session: ${error.message}`);
+            }
+        }
+
+        // Scrape animals by category
+        async function scrapeAnimals(category) {
+            const baseUrl = 'http://localhost:8000';
+            const categoryNames = {
+                'all': 'All Animals',
+                'cats': 'Cats',
+                'dogs': 'Dogs',
+                'rabbits': 'Rabbits',
+                'birds': 'Birds',
+                'small-animals': 'Small Animals'
+            };
+
+            log('INFO', `Starting scrape for: ${categoryNames[category]}`);
+            addSystemMessage(`🔄 Starting scrape for ${categoryNames[category]}... This may take a few minutes.`);
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/scrape`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        job_type: category === 'all' ? 'animals' : 'animals',
+                        filters: category === 'all' ? null : { species: category }
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    addSystemMessage(`✅ Scrape job started for ${categoryNames[category]}! Job ID: ${result.job_id || 'N/A'}`);
+                    log('INFO', `Scrape job started: ${JSON.stringify(result)}`);
+                } else {
+                    addErrorMessage(`Failed to start scrape: ${result.error || result.detail}`);
+                    log('ERROR', `Scrape failed: ${JSON.stringify(result)}`);
+                }
+            } catch (error) {
+                log('ERROR', `Failed to start scrape: ${error.message}`);
+                addErrorMessage(`Failed to start scrape: ${error.message}`);
+            }
+        }
+
+        // Scrape general content
+        async function scrapeContent() {
+            const baseUrl = 'http://localhost:8000';
+
+            log('INFO', 'Starting general content scrape');
+            addSystemMessage('🔄 Starting general content scrape... This may take several minutes.');
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/scrape`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        job_type: 'content'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    addSystemMessage(`✅ Content scrape job started! Job ID: ${result.job_id || 'N/A'}`);
+                    log('INFO', `Content scrape started: ${JSON.stringify(result)}`);
+                } else {
+                    addErrorMessage(`Failed to start content scrape: ${result.error || result.detail}`);
+                    log('ERROR', `Content scrape failed: ${JSON.stringify(result)}`);
+                }
+            } catch (error) {
+                log('ERROR', `Failed to start content scrape: ${error.message}`);
+                addErrorMessage(`Failed to start content scrape: ${error.message}`);
+            }
+        }
+
+        // Sync to Google File Search
+        async function syncToGoogle() {
+            const baseUrl = 'http://localhost:8000';
+
+            log('INFO', 'Starting sync to Google File Search');
+            addSystemMessage('🔄 Starting sync to Google File Search... This may take a few minutes.');
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sync_type: 'all'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    addSystemMessage(`✅ Sync completed! Files synced: ${result.files_synced || 'N/A'}`);
+                    log('INFO', `Sync completed: ${JSON.stringify(result)}`);
+                } else {
+                    addErrorMessage(`Failed to sync: ${result.error || result.detail}`);
+                    log('ERROR', `Sync failed: ${JSON.stringify(result)}`);
+                }
+            } catch (error) {
+                log('ERROR', `Failed to sync: ${error.message}`);
+                addErrorMessage(`Failed to sync: ${error.message}`);
+            }
+        }
+
+        // Refresh files in chatbot
+        async function refreshFiles() {
+            const baseUrl = 'http://localhost:8000';
+
+            log('INFO', 'Refreshing chatbot files');
+            addSystemMessage('🔄 Refreshing chatbot files...');
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/chat/refresh-files`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    addSystemMessage(`✅ Files refreshed! Loaded ${result.file_count || 0} files.`);
+                    log('INFO', `Files refreshed: ${JSON.stringify(result)}`);
+                } else {
+                    addErrorMessage(`Failed to refresh files: ${result.error || result.detail}`);
+                    log('ERROR', `Refresh failed: ${JSON.stringify(result)}`);
+                }
+            } catch (error) {
+                log('ERROR', `Failed to refresh files: ${error.message}`);
+                addErrorMessage(`Failed to refresh files: ${error.message}`);
             }
         }
 

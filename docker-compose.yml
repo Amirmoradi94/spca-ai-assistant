@@ -30,7 +30,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-spca}:${POSTGRES_PASSWORD:-spca_password}@db:5432/${POSTGRES_DB:-spca}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-spca}:${POSTGRES_PASSWORD:-spc@1234!}@db:5432/${POSTGRES_DB:-spca}
     volumes:
       - ./content:/app/content
       - ./logs:/app/logs
@@ -47,7 +47,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-spca}:${POSTGRES_PASSWORD:-spca_password}@db:5432/${POSTGRES_DB:-spca}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-spca}:${POSTGRES_PASSWORD:-spc@1234!}@db:5432/${POSTGRES_DB:-spca}
     volumes:
       - ./content:/app/content
       - ./logs:/app/logs
