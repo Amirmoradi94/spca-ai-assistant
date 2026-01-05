@@ -1,0 +1,31 @@
+{
+  "widget": {
+    "title": "Assistant SPCA",
+    "greeting": "Bonjour! Je peux vous aider à trouver des informations sur les services de la SPCA et les animaux à adopter. Comment puis-je vous aider aujourd'hui?",
+    "placeholder": "Tapez votre message...",
+    "send": "Envoyer",
+    "close": "Fermer",
+    "minimize": "Réduire",
+    "typing": "En train d'écrire...",
+    "error": "Désolé, une erreur s'est produite. Veuillez réessayer.",
+    "offline": "Vous semblez être hors ligne. Veuillez vérifier votre connexion.",
+    "retry": "Réessayer",
+    "poweredBy": "Propulsé par IA"
+  },
+  "suggestions": {
+    "title": "Questions suggérées:",
+    "questions": [
+      "Quels chiens sont disponibles pour adoption?",
+      "Quels sont les frais d'adoption?",
+      "Quelles sont vos heures d'ouverture?",
+      "Comment puis-je adopter un animal?",
+      "Avez-vous des chats disponibles?"
+    ]
+  },
+  "accessibility": {
+    "openChat": "Ouvrir le chat",
+    "closeChat": "Fermer le chat",
+    "sendMessage": "Envoyer le message",
+    "messageInput": "Saisie de message"
+  }
+}

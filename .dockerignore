@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+venv
+env
+.venv
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+.env
+*.log
+logs/
+content/
+*.db
+*.sqlite
+*.sqlite3
+
+# Tests
+.pytest_cache
+.coverage
+htmlcov/
+
+# Documentation
+docs/_build
+*.md
+!README.md
+
+# Widget
+widget/node_modules
+widget/dist
+
+# CI/CD
+.github
+.gitlab-ci.yml

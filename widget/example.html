@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPCA Chat Widget Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #0066cc;
+        }
+        .info-box {
+            background: #f5f5f5;
+            border-left: 4px solid #0066cc;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>SPCA Montreal - Chat Widget Example</h1>
+
+    <p>Welcome to the SPCA Montreal website. This page demonstrates the AI chat widget.</p>
+
+    <div class="info-box">
+        <h2>About SPCA Montreal</h2>
+        <p>The SPCA Montreal is dedicated to animal welfare and finding loving homes for animals in need.</p>
+        <p>We have dogs, cats, rabbits, birds, and small animals available for adoption.</p>
+    </div>
+
+    <h2>How to Use the Chat Widget</h2>
+    <ol>
+        <li>Click the blue chat button in the bottom-right corner</li>
+        <li>Ask questions about our animals, services, or adoption process</li>
+        <li>The AI assistant will provide helpful information</li>
+    </ol>
+
+    <h2>Example Questions</h2>
+    <ul>
+        <li>What dogs are available for adoption?</li>
+        <li>What are the adoption fees?</li>
+        <li>What are your opening hours?</li>
+        <li>How can I adopt a pet?</li>
+    </ul>
+
+    <!-- SPCA Chat Widget -->
+    <script>
+        window.SPCA_CHAT_CONFIG = {
+            apiEndpoint: 'http://localhost:8000/api/v1/chat',
+            theme: {
+                primaryColor: '#0066cc',
+                headerBg: '#0066cc'
+            },
+            language: 'auto',
+            showGreeting: true,
+            showSuggestions: true
+        };
+    </script>
+    <link rel="stylesheet" href="src/styles.css">
+    <script src="src/index.js" data-auto-init="true"></script>
+</body>
+</html>

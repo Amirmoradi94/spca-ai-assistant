@@ -1,0 +1,53 @@
+app:
+  name: "SPCA AI Assistant"
+  version: "1.0.0"
+
+scraping:
+  base_url: "https://www.spca.com"
+  rate_limit: 0.5
+  max_concurrent: 5
+  timeout: 30
+  retry_attempts: 3
+  user_agent: "SPCA-Assistant-Bot/1.0"
+
+  adoption_urls:
+    - "https://www.spca.com/en/adoption/cats-for-adoption/"
+    - "https://www.spca.com/en/adoption/dogs-for-adoption/"
+    - "https://www.spca.com/en/adoption/rabbits-for-adoption/"
+    - "https://www.spca.com/en/adoption/birds-for-adoption/"
+    - "https://www.spca.com/en/adoption/small-animals-for-adoption/"
+
+content:
+  base_dir: "./content"
+  animals_subdir: "animals"
+  general_subdir: "general"
+  file_extension: ".txt"
+
+database:
+  echo: false
+  pool_size: 5
+  max_overflow: 10
+
+file_search:
+  store_name: "spca_knowledge_base"
+  sync_batch_size: 50
+  max_file_size_mb: 100
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: []
+
+session:
+  expiry_hours: 1
+  max_sessions: 10000
+  cleanup_interval: 300
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+scheduling:
+  animal_scrape_hours: 4
+  content_scrape_hour: 2
+  sitemap_refresh_day: "sun"
