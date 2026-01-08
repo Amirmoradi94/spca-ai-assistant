@@ -18,8 +18,8 @@ pydantic>=2.5.0
 pydantic-settings>=2.1.0
 python-multipart>=0.0.6
 
-# Google Gemini
-google-generativeai>=0.8.0
+# Google Gemini (new package)
+google-genai>=0.3.0
 
 # Scheduling
 apscheduler>=3.10.0

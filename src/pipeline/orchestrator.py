@@ -196,10 +196,11 @@ class PipelineOrchestrator:
             listing_urls = URLCategorizer.get_adoption_urls(language)
 
             for listing_url in listing_urls:
-                logger.info(f"Scraping listing: {listing_url}")
+                logger.info(f"Scraping listing with pagination: {listing_url}")
 
                 try:
-                    pet_cards = await self.animal_scraper.scrape_listing_page(listing_url)
+                    # Scrape all pages until no more pets found
+                    pet_cards = await self.animal_scraper.scrape_listing_with_pagination(listing_url)
                     discovered += len(pet_cards)
 
                     for pet_card in pet_cards:
@@ -217,23 +218,31 @@ class PipelineOrchestrator:
                             )
 
                             if animal_data.get("success"):
-                                # Save to database
-                                await animal_repo.upsert(animal_data)
-                                scraped += 1
+                                # Save to database (remove non-model fields)
+                                db_data = {k: v for k, v in animal_data.items() if k not in ('success', 'error')}
 
-                                ref = animal_data.get("reference_number")
-                                if ref:
-                                    found_refs.add(ref)
+                                try:
+                                    await animal_repo.upsert(db_data)
+                                    await session.commit()  # Commit after each animal
+                                    scraped += 1
 
-                                await url_repo.mark_success(
-                                    pet_url,
-                                    animal_data.get("content_hash", ""),
-                                )
+                                    ref = animal_data.get("reference_number")
+                                    if ref:
+                                        found_refs.add(ref)
 
-                                await emit_event(
-                                    EventType.ANIMAL_UPDATED,
-                                    {"reference": ref, "url": pet_url},
-                                )
+                                    await url_repo.mark_success(
+                                        pet_url,
+                                        animal_data.get("content_hash", ""),
+                                    )
+
+                                    await emit_event(
+                                        EventType.ANIMAL_UPDATED,
+                                        {"reference": ref, "url": pet_url},
+                                    )
+                                except Exception as db_error:
+                                    logger.warning(f"Failed to save {pet_url}: {db_error}")
+                                    await session.rollback()  # Rollback failed save
+                                    failed += 1
                             else:
                                 failed += 1
                                 await url_repo.mark_failed(
@@ -265,7 +274,7 @@ class PipelineOrchestrator:
         }
 
     async def _scrape_content(self, session, categorized: dict) -> dict:
-        """Scrape general content pages."""
+        """Scrape general content pages with smart retry mechanism."""
         url_repo = ScrapedURLRepository(session)
 
         discovered = 0
@@ -275,6 +284,8 @@ class PipelineOrchestrator:
         # Get content URLs (general, service, tips)
         content_types = [URLType.GENERAL, URLType.SERVICE, URLType.TIPS]
 
+        # Phase 1: Initial scraping pass
+        logger.info("Phase 1: Initial content scraping pass")
         for url_type in content_types:
             urls = [cu.url for cu in categorized.get(url_type, [])]
             discovered += len(urls)
@@ -296,16 +307,94 @@ class PipelineOrchestrator:
                             EventType.CONTENT_SAVED,
                             {"url": url, "file_path": result.get("file_path")},
                         )
+                        await session.commit()  # Commit after each success
                     else:
                         failed += 1
                         await url_repo.mark_failed(url, result.get("error", "Unknown"))
+                        await session.commit()  # Commit failures too
+                        logger.warning(f"Failed to scrape {url}: {result.get('error', 'Unknown')}")
 
                 except Exception as e:
                     logger.error(f"Failed to scrape content {url}: {e}")
                     failed += 1
-                    await url_repo.mark_failed(url, str(e))
+                    try:
+                        await url_repo.mark_failed(url, str(e))
+                        await session.commit()  # Commit failures
+                    except Exception as db_error:
+                        logger.error(f"Failed to mark URL as failed: {db_error}")
+                        await session.rollback()
 
-        await session.commit()
+        # Phase 2: Retry failed URLs (max 3 retries)
+        logger.info(f"Phase 1 complete. Scraped: {scraped}, Failed: {failed}")
+
+        max_retries = 3
+        for retry_attempt in range(1, max_retries + 1):
+            # Get failed URLs that haven't exceeded max retries
+            failed_urls = await url_repo.get_failed(max_retries=max_retries)
+
+            if not failed_urls:
+                logger.info(f"No failed URLs to retry at attempt {retry_attempt}")
+                break
+
+            logger.info(f"Phase 2 - Retry attempt {retry_attempt}: Retrying {len(failed_urls)} failed URLs")
+
+            retried = 0
+            retry_success = 0
+
+            for scraped_url in failed_urls:
+                url = scraped_url.url
+
+                try:
+                    logger.info(f"Retrying {url} (attempt {scraped_url.retry_count + 1}/{max_retries})")
+
+                    # Use longer timeout for retries
+                    result = await self.content_scraper.scrape_and_save(url)
+
+                    if result.get("success"):
+                        retry_success += 1
+                        scraped += 1
+                        failed -= 1  # Reduce failed count
+                        await url_repo.mark_success(
+                            url,
+                            result.get("content_hash", ""),
+                            result.get("file_path"),
+                        )
+                        await emit_event(
+                            EventType.CONTENT_SAVED,
+                            {"url": url, "file_path": result.get("file_path")},
+                        )
+                        await session.commit()
+                        logger.info(f"✓ Retry successful for {url}")
+                    else:
+                        await url_repo.mark_failed(url, result.get("error", "Unknown"))
+                        await session.commit()
+                        logger.warning(f"Retry failed for {url}: {result.get('error', 'Unknown')}")
+
+                    retried += 1
+
+                except Exception as e:
+                    logger.error(f"Exception during retry for {url}: {e}")
+                    try:
+                        await url_repo.mark_failed(url, str(e))
+                        await session.commit()
+                    except Exception as db_error:
+                        logger.error(f"Failed to mark URL as failed: {db_error}")
+                        await session.rollback()
+
+            logger.info(f"Retry attempt {retry_attempt} complete. Retried: {retried}, Successful: {retry_success}")
+
+            # If we successfully retried some URLs, continue to next attempt for remaining failures
+            if retry_success == 0 and retried > 0:
+                logger.info("No successful retries in this attempt, stopping retry loop")
+                break
+
+        # Final commit in case any pending
+        try:
+            await session.commit()
+        except Exception:
+            pass  # Already committed incrementally
+
+        logger.info(f"Content scraping complete. Total - Discovered: {discovered}, Scraped: {scraped}, Failed: {failed}")
 
         return {
             "discovered": discovered,

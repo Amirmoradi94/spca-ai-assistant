@@ -38,6 +38,12 @@ class ScrapeScheduler:
 
     def setup_schedules(self) -> None:
         """Configure all scheduled jobs."""
+        # Check if auto scraping is enabled
+        enable_auto_scraping = self.yaml_config.get("scheduling.enable_auto_scraping", False)
+        if not enable_auto_scraping:
+            logger.info("Auto scraping is disabled. Scheduled jobs will not be set up.")
+            return
+
         # Get schedule config
         animal_hours = self.yaml_config.get("scheduling.animal_scrape_hours", 4)
         content_hour = self.yaml_config.get("scheduling.content_scrape_hour", 2)
@@ -152,12 +158,17 @@ async def run_scheduler() -> None:
     # Start scheduler
     scheduler.start()
 
-    # Run an initial animal scrape on startup
-    logger.info("Running initial animal scrape")
-    try:
-        await scheduler.trigger_immediate("animals")
-    except Exception as e:
-        logger.error(f"Initial scrape failed: {e}")
+    # Run an initial animal scrape on startup if auto scraping is enabled
+    yaml_config = get_yaml_config()
+    enable_auto_scraping = yaml_config.get("scheduling.enable_auto_scraping", False)
+    if enable_auto_scraping:
+        logger.info("Running initial animal scrape")
+        try:
+            await scheduler.trigger_immediate("animals")
+        except Exception as e:
+            logger.error(f"Initial scrape failed: {e}")
+    else:
+        logger.info("Auto scraping is disabled. Skipping initial scrape on startup.")
 
     # Wait for shutdown
     await shutdown_event.wait()

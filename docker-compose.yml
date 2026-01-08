@@ -29,8 +29,6 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-spca}:${POSTGRES_PASSWORD:-spc@1234!}@db:5432/${POSTGRES_DB:-spca}
     volumes:
       - ./content:/app/content
       - ./logs:/app/logs
@@ -46,8 +44,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-spca}:${POSTGRES_PASSWORD:-spc@1234!}@db:5432/${POSTGRES_DB:-spca}
     volumes:
       - ./content:/app/content
       - ./logs:/app/logs

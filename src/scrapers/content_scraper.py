@@ -26,27 +26,41 @@ class ContentScraper(BaseScraper):
 
     async def _do_scrape(self, url: str) -> dict[str, Any]:
         """Scrape a URL using Crawl4AI."""
-        async with AsyncWebCrawler(verbose=False) as crawler:
-            result = await crawler.arun(
-                url=url,
-                extraction_strategy=NoExtractionStrategy(),
-                bypass_cache=True,
-            )
+        try:
+            async with AsyncWebCrawler(
+                verbose=False,
+                headless=True,
+            ) as crawler:
+                result = await crawler.arun(
+                    url=url,
+                    extraction_strategy=NoExtractionStrategy(),
+                    bypass_cache=True,
+                    wait_for="networkidle",  # Wait for network to be idle
+                    page_timeout=30000,  # 30 seconds timeout
+                    delay_before_return_html=2.0,  # Wait 2 seconds before getting content
+                )
 
-            if result.success:
-                return {
-                    "url": url,
-                    "html": result.html,
-                    "markdown": result.markdown,
-                    "title": self._extract_title(result.html),
-                    "success": True,
-                }
-            else:
-                return {
-                    "url": url,
-                    "success": False,
-                    "error": result.error_message or "Unknown error",
-                }
+                if result.success:
+                    return {
+                        "url": url,
+                        "html": result.html,
+                        "markdown": result.markdown,
+                        "title": self._extract_title(result.html),
+                        "success": True,
+                    }
+                else:
+                    return {
+                        "url": url,
+                        "success": False,
+                        "error": result.error_message or "Unknown error",
+                    }
+        except Exception as e:
+            self.logger.error(f"Error scraping {url}: {e}")
+            return {
+                "url": url,
+                "success": False,
+                "error": str(e),
+            }
 
     def _extract_title(self, html: str) -> str:
         """Extract page title from HTML."""

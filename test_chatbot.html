@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPCA Chatbot - Testing Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -125,6 +126,70 @@
             background: #c82333;
         }
 
+        .btn-warning {
+            background: #ff9800;
+        }
+
+        .btn-warning:hover {
+            background: #e68900;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .btn-cat {
+            background: #ff9800;
+        }
+
+        .btn-cat:hover {
+            background: #e68900;
+        }
+
+        .btn-dog {
+            background: #795548;
+        }
+
+        .btn-dog:hover {
+            background: #5d4037;
+        }
+
+        .btn-rabbit {
+            background: #e91e63;
+        }
+
+        .btn-rabbit:hover {
+            background: #c2185b;
+        }
+
+        .btn-bird {
+            background: #00bcd4;
+        }
+
+        .btn-bird:hover {
+            background: #0097a7;
+        }
+
+        .btn-small {
+            background: #9c27b0;
+        }
+
+        .btn-small:hover {
+            background: #7b1fa2;
+        }
+
         .chat-container {
             flex: 1;
             display: flex;
@@ -224,7 +289,38 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             font-size: 14px;
             line-height: 1.6;
-            white-space: pre-wrap;
+        }
+
+        .message-content p {
+            margin-bottom: 10px;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+
+        .message-content ul, .message-content ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .message-content li {
+            margin-bottom: 5px;
+        }
+
+        .message-content strong {
+            font-weight: 600;
+            color: #333;
         }
 
         .message.user .message-content {
@@ -442,28 +538,79 @@
 
             <div class="info-section">
                 <h3>Quick Test Queries</h3>
-                <button class="btn btn-secondary" onclick="sendQuickQuery('What dogs are available for adoption?')">🐕 Dogs</button>
-                <button class="btn btn-secondary" onclick="sendQuickQuery('What cats are available for adoption?')">🐱 Cats</button>
-                <button class="btn btn-secondary" onclick="sendQuickQuery('What are the adoption fees?')">💰 Fees</button>
+                <button class="btn btn-dog" onclick="sendQuickQuery('What dogs are available for adoption?')">🐕 Dogs</button>
+                <button class="btn btn-cat" onclick="sendQuickQuery('What cats are available for adoption?')">🐱 Cats</button>
+                <button class="btn btn-info" onclick="sendQuickQuery('What are the adoption fees?')">💰 Fees</button>
                 <button class="btn btn-secondary" onclick="sendQuickQuery('What are your opening hours?')">🕒 Hours</button>
+            </div>
+
+            <div class="info-section">
+                <h3>📊 Database Stats</h3>
+                <div id="dbStats" style="font-size: 12px; color: #333;">
+                    <p><strong>Animals:</strong> <span id="totalAnimals">-</span> (<span id="syncedAnimals">-</span> synced)</p>
+                    <div id="speciesBreakdown" style="margin-left: 10px; margin-top: 5px;"></div>
+
+                    <p style="margin-top: 8px;"><strong>Content Files:</strong> <span id="totalContent">-</span></p>
+                    <div id="contentBreakdown" style="margin-left: 10px; margin-top: 5px;"></div>
+
+                    <p style="margin-top: 8px;"><strong>Latest Job:</strong> <span id="latestJobInfo">-</span></p>
+                    <p style="margin-top: 8px; font-size: 11px;"><strong>Failed URLs (retryable):</strong> <span id="retryableCount" style="color: #ff9800;">-</span></p>
+                    <button class="btn btn-secondary" onclick="refreshStats()" style="width: 100%; margin-top: 8px; font-size: 11px;">🔄 Refresh Stats</button>
+                </div>
             </div>
 
             <div class="info-section">
                 <h3>🔧 Scraper Controls</h3>
                 <p style="font-size: 12px; color: #666; margin-bottom: 8px;">Scrape Animals:</p>
-                <button class="btn btn-secondary" onclick="scrapeAnimals('all')" style="width: 100%; margin-bottom: 5px;">🐾 All Animals</button>
-                <button class="btn btn-secondary" onclick="scrapeAnimals('cats')" style="width: 48%; margin-right: 4%;">🐱 Cats</button>
-                <button class="btn btn-secondary" onclick="scrapeAnimals('dogs')" style="width: 48%;">🐕 Dogs</button>
-                <button class="btn btn-secondary" onclick="scrapeAnimals('rabbits')" style="width: 48%; margin-right: 4%; margin-top: 5px;">🐰 Rabbits</button>
-                <button class="btn btn-secondary" onclick="scrapeAnimals('birds')" style="width: 48%; margin-top: 5px;">🦜 Birds</button>
-                <button class="btn btn-secondary" onclick="scrapeAnimals('small-animals')" style="width: 100%; margin-top: 5px;">🐹 Small Animals</button>
+                <button class="btn" onclick="scrapeAnimals('all')" style="width: 100%; margin-bottom: 5px;">🐾 All Animals</button>
+                <button class="btn btn-cat" onclick="scrapeAnimals('cats')" style="width: 100%; margin-bottom: 5px;">🐱 Cats</button>
+                <button class="btn btn-dog" onclick="scrapeAnimals('dogs')" style="width: 100%; margin-bottom: 5px;">🐕 Dogs</button>
+                <button class="btn btn-rabbit" onclick="scrapeAnimals('rabbits')" style="width: 100%; margin-bottom: 5px;">🐰 Rabbits</button>
+                <button class="btn btn-bird" onclick="scrapeAnimals('birds')" style="width: 100%; margin-bottom: 5px;">🦜 Birds</button>
+                <button class="btn btn-small" onclick="scrapeAnimals('small-animals')" style="width: 100%; margin-bottom: 5px;">🐹 Small Animals</button>
 
                 <p style="font-size: 12px; color: #666; margin-top: 12px; margin-bottom: 8px;">General Content:</p>
-                <button class="btn btn-secondary" onclick="scrapeContent()" style="width: 100%;">📄 Scrape General Content</button>
+                <button class="btn btn-info" onclick="scrapeContent()" style="width: 100%; margin-bottom: 5px;">📄 Scrape General Content</button>
+                <button class="btn btn-warning" onclick="retryFailedUrls()" style="width: 100%; margin-bottom: 5px;">🔄 Retry Failed URLs</button>
 
                 <p style="font-size: 12px; color: #666; margin-top: 12px; margin-bottom: 8px;">Sync & Refresh:</p>
-                <button class="btn btn-secondary" onclick="syncToGoogle()" style="width: 100%; margin-bottom: 5px;">☁️ Sync to Google</button>
-                <button class="btn btn-secondary" onclick="refreshFiles()" style="width: 100%;">🔄 Refresh Files</button>
+                <button class="btn btn-success" onclick="syncToGoogle('animals')" style="width: 100%; margin-bottom: 5px;">🐾 Sync Animals Only</button>
+                <button class="btn btn-success" onclick="syncToGoogle('content')" style="width: 100%; margin-bottom: 5px;">📄 Sync Content Only</button>
+                <button class="btn btn-success" onclick="syncToGoogle('all')" style="width: 100%; margin-bottom: 5px;">☁️ Sync All (Animals + Content)</button>
+                <button class="btn btn-info" onclick="refreshFiles()" style="width: 100%; margin-bottom: 5px;">🔄 Refresh Files</button>
+
+                <p style="font-size: 12px; color: #666; margin-top: 12px; margin-bottom: 8px;">Maintenance:</p>
+                <button class="btn btn-warning" onclick="fixStaleJobs()" style="width: 100%; margin-bottom: 5px;">🔧 Fix Stale Jobs</button>
+            </div>
+
+            <div class="info-section">
+                <h3>📜 Scraper Logs</h3>
+                <div class="scraper-logs scrollbar" id="scraperLogs" style="height: 200px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; color: #333;">
+                    <div style="color: #999;">Logs will appear here when scraping...</div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>🗄️ Database Viewer</h3>
+                <div class="controls">
+                    <label for="tableSelect">Select Table:</label>
+                    <select id="tableSelect" onchange="loadTableData()">
+                        <option value="">-- Select a table --</option>
+                        <option value="animals">Animals</option>
+                        <option value="scrape_jobs">Scrape Jobs</option>
+                        <option value="scraped_urls">Scraped URLs</option>
+                        <option value="sync_log">Sync Log</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary" onclick="loadTableData()" style="width: 100%; margin-bottom: 8px; font-size: 11px;">🔄 Refresh Table</button>
+                <div id="tableInfo" style="font-size: 11px; color: #666; margin-bottom: 8px;"></div>
+                <div class="scrollbar" id="tableDataContainer" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 10px;">
+                    <div style="color: #999;">Select a table to view its data...</div>
+                </div>
+                <div style="display: flex; gap: 5px; margin-top: 8px;" id="paginationControls" hidden>
+                    <button class="btn btn-secondary" onclick="previousPage()" id="prevBtn" style="flex: 1; font-size: 10px; padding: 6px;">← Prev</button>
+                    <button class="btn btn-secondary" onclick="nextPage()" id="nextBtn" style="flex: 1; font-size: 10px; padding: 6px;">Next →</button>
+                </div>
             </div>
 
             <div class="log-console scrollbar" id="logConsole"></div>
@@ -519,6 +666,7 @@ Try asking about:
         let sessionId = null;
         let messageCount = 0;
         let isTyping = false;
+        let isCreatingSession = false;
 
         // Initialize
         window.addEventListener('load', () => {
@@ -528,6 +676,16 @@ Try asking about:
 
         // Create new session
         async function createNewSession() {
+            // Prevent duplicate session creation
+            if (isCreatingSession) {
+                log('WARN', 'Session creation already in progress, ignoring duplicate request');
+                return;
+            }
+
+            isCreatingSession = true;
+            const newSessionBtn = document.querySelector('button[onclick="createNewSession()"]');
+            if (newSessionBtn) newSessionBtn.disabled = true;
+
             const apiEndpoint = document.getElementById('apiEndpoint').value;
             const language = document.getElementById('languageSelect').value;
 
@@ -555,6 +713,9 @@ Try asking about:
                 log('ERROR', `Failed to create session: ${error.message}`);
                 addErrorMessage(`Failed to create session: ${error.message}`);
                 setStatus(false);
+            } finally {
+                isCreatingSession = false;
+                if (newSessionBtn) newSessionBtn.disabled = false;
             }
         }
 
@@ -629,20 +790,36 @@ Try asking about:
             const now = new Date();
             const timeStr = now.toLocaleTimeString();
 
+            // For assistant messages, render markdown. For user messages, escape HTML
+            const messageContent = role === 'assistant'
+                ? marked.parse(content)
+                : escapeHtml(content);
+
             let html = `
                 <div class="message-header">
                     <span class="message-role ${role}">${role === 'user' ? '👤 You' : '🤖 Assistant'}</span>
                     <span class="message-time">${timeStr}</span>
                 </div>
-                <div class="message-content">${escapeHtml(content)}</div>
+                <div class="message-content">${messageContent}</div>
             `;
 
+            // Only show sources if they exist and contain valid data
             if (sources && sources.length > 0) {
-                html += '<div class="message-sources"><h4>📚 Sources:</h4>';
-                sources.forEach((source, i) => {
-                    html += `<div class="source-item">${i + 1}. ${escapeHtml(source.file)}: "${escapeHtml(source.snippet)}"</div>`;
-                });
-                html += '</div>';
+                // Filter out sources with empty or invalid data
+                const validSources = sources.filter(source =>
+                    source.file &&
+                    source.file !== 'Unknown' &&
+                    source.snippet &&
+                    source.snippet.trim() !== ''
+                );
+
+                if (validSources.length > 0) {
+                    html += '<div class="message-sources"><h4>📚 Sources:</h4>';
+                    validSources.forEach((source, i) => {
+                        html += `<div class="source-item">${i + 1}. ${escapeHtml(source.file)}: "${escapeHtml(source.snippet)}"</div>`;
+                    });
+                    html += '</div>';
+                }
             }
 
             if (suggestions && suggestions.length > 0) {
@@ -775,6 +952,12 @@ Try asking about:
 
             log('INFO', `Starting scrape for: ${categoryNames[category]}`);
             addSystemMessage(`🔄 Starting scrape for ${categoryNames[category]}... This may take a few minutes.`);
+            addScraperLog(`🚀 Starting ${categoryNames[category]} scrape...`, 'info');
+            clearScraperLogs();
+            addScraperLog(`🚀 Starting ${categoryNames[category]} scrape...`, 'info');
+
+            // Start polling stats
+            startStatsPolling();
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/scrape`, {
@@ -792,14 +975,29 @@ Try asking about:
 
                 if (response.ok) {
                     addSystemMessage(`✅ Scrape job started for ${categoryNames[category]}! Job ID: ${result.job_id || 'N/A'}`);
+                    addScraperLog(`✅ Job started! ID: ${result.job_id}`, 'success');
+                    addScraperLog(`📊 Discovered: ${result.urls_discovered || 0} URLs`, 'info');
+                    addScraperLog(`✔️  Scraped: ${result.urls_scraped || 0} animals`, 'success');
+                    addScraperLog(`❌ Failed: ${result.urls_failed || 0}`, result.urls_failed > 0 ? 'warning' : 'info');
+                    addScraperLog(`🎉 Scrape completed!`, 'success');
                     log('INFO', `Scrape job started: ${JSON.stringify(result)}`);
+
+                    // Refresh stats one more time after completion
+                    setTimeout(() => {
+                        refreshStats();
+                        stopStatsPolling();
+                    }, 2000);
                 } else {
                     addErrorMessage(`Failed to start scrape: ${result.error || result.detail}`);
+                    addScraperLog(`❌ Error: ${result.error || result.detail}`, 'error');
                     log('ERROR', `Scrape failed: ${JSON.stringify(result)}`);
+                    stopStatsPolling();
                 }
             } catch (error) {
                 log('ERROR', `Failed to start scrape: ${error.message}`);
                 addErrorMessage(`Failed to start scrape: ${error.message}`);
+                addScraperLog(`❌ Error: ${error.message}`, 'error');
+                stopStatsPolling();
             }
         }
 
@@ -809,6 +1007,9 @@ Try asking about:
 
             log('INFO', 'Starting general content scrape');
             addSystemMessage('🔄 Starting general content scrape... This may take several minutes.');
+            clearScraperLogs();
+            addScraperLog('🚀 Starting general content scrape...', 'info');
+            startStatsPolling();
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/scrape`, {
@@ -825,23 +1026,46 @@ Try asking about:
 
                 if (response.ok) {
                     addSystemMessage(`✅ Content scrape job started! Job ID: ${result.job_id || 'N/A'}`);
+                    addScraperLog(`✅ Job started! ID: ${result.job_id}`, 'success');
+                    addScraperLog(`📊 Discovered: ${result.urls_discovered || 0} URLs`, 'info');
+                    addScraperLog(`✔️  Scraped: ${result.urls_scraped || 0} pages`, 'success');
+                    addScraperLog(`🎉 Content scrape completed!`, 'success');
                     log('INFO', `Content scrape started: ${JSON.stringify(result)}`);
+
+                    setTimeout(() => {
+                        refreshStats();
+                        stopStatsPolling();
+                    }, 2000);
                 } else {
                     addErrorMessage(`Failed to start content scrape: ${result.error || result.detail}`);
+                    addScraperLog(`❌ Error: ${result.error || result.detail}`, 'error');
                     log('ERROR', `Content scrape failed: ${JSON.stringify(result)}`);
+                    stopStatsPolling();
                 }
             } catch (error) {
                 log('ERROR', `Failed to start content scrape: ${error.message}`);
                 addErrorMessage(`Failed to start content scrape: ${error.message}`);
+                addScraperLog(`❌ Error: ${error.message}`, 'error');
+                stopStatsPolling();
             }
         }
 
         // Sync to Google File Search
-        async function syncToGoogle() {
+        async function syncToGoogle(syncType = 'all') {
             const baseUrl = 'http://localhost:8000';
 
-            log('INFO', 'Starting sync to Google File Search');
-            addSystemMessage('🔄 Starting sync to Google File Search... This may take a few minutes.');
+            const syncTypeNames = {
+                'animals': 'Animals',
+                'content': 'General Content',
+                'all': 'All (Animals + Content)'
+            };
+            const syncName = syncTypeNames[syncType] || 'All';
+
+            log('INFO', `Starting sync to Google File Search: ${syncName}`);
+            addSystemMessage(`🔄 Starting sync to Google File Search (${syncName})... This may take a few minutes.`);
+            clearScraperLogs();
+            addScraperLog(`🚀 Starting sync to Google File Search: ${syncName}...`, 'info');
+            startStatsPolling();
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/sync`, {
@@ -850,22 +1074,85 @@ Try asking about:
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        sync_type: 'all'
+                        sync_type: syncType
                     })
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    addSystemMessage(`✅ Sync completed! Files synced: ${result.files_synced || 'N/A'}`);
-                    log('INFO', `Sync completed: ${JSON.stringify(result)}`);
+                    addSystemMessage(`✅ Sync completed (${syncName})! Files synced: ${result.synced || 'N/A'}`);
+                    addScraperLog(`✅ Sync completed (${syncName})!`, 'success');
+                    addScraperLog(`📤 Files synced: ${result.synced || 0}`, 'success');
+                    addScraperLog(`❌ Failed: ${result.failed || 0}`, result.failed > 0 ? 'warning' : 'info');
+                    log('INFO', `Sync completed (${syncName}): ${JSON.stringify(result)}`);
+
+                    setTimeout(() => {
+                        refreshStats();
+                        stopStatsPolling();
+                    }, 2000);
                 } else {
                     addErrorMessage(`Failed to sync: ${result.error || result.detail}`);
+                    addScraperLog(`❌ Error: ${result.error || result.detail}`, 'error');
                     log('ERROR', `Sync failed: ${JSON.stringify(result)}`);
+                    stopStatsPolling();
                 }
             } catch (error) {
                 log('ERROR', `Failed to sync: ${error.message}`);
                 addErrorMessage(`Failed to sync: ${error.message}`);
+                addScraperLog(`❌ Error: ${error.message}`, 'error');
+                stopStatsPolling();
+            }
+        }
+
+        // Retry failed URLs
+        async function retryFailedUrls() {
+            const baseUrl = 'http://localhost:8000';
+
+            log('INFO', 'Starting retry of failed URLs');
+            addSystemMessage('🔄 Retrying failed URLs...');
+            clearScraperLogs();
+            addScraperLog('🚀 Starting retry of failed URLs...', 'info');
+            startStatsPolling();
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/retry-failed`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.retried === 0) {
+                        addSystemMessage(`ℹ️ ${result.message}`);
+                        addScraperLog(`ℹ️ ${result.message}`, 'info');
+                    } else {
+                        addSystemMessage(`✅ ${result.message}`);
+                        addScraperLog(`✅ Retry complete!`, 'success');
+                        addScraperLog(`📊 Retried: ${result.retried}`, 'info');
+                        addScraperLog(`✔️  Successful: ${result.successful}`, 'success');
+                        addScraperLog(`❌ Still failed: ${result.failed}`, result.failed > 0 ? 'warning' : 'info');
+                    }
+                    log('INFO', `Retry completed: ${JSON.stringify(result)}`);
+
+                    setTimeout(() => {
+                        refreshStats();
+                        stopStatsPolling();
+                    }, 2000);
+                } else {
+                    addErrorMessage(`Failed to retry: ${result.error || result.detail}`);
+                    addScraperLog(`❌ Error: ${result.error || result.detail}`, 'error');
+                    log('ERROR', `Retry failed: ${JSON.stringify(result)}`);
+                    stopStatsPolling();
+                }
+            } catch (error) {
+                log('ERROR', `Failed to retry: ${error.message}`);
+                addErrorMessage(`Failed to retry: ${error.message}`);
+                addScraperLog(`❌ Error: ${error.message}`, 'error');
+                stopStatsPolling();
             }
         }
 
@@ -893,6 +1180,142 @@ Try asking about:
             } catch (error) {
                 log('ERROR', `Failed to refresh files: ${error.message}`);
                 addErrorMessage(`Failed to refresh files: ${error.message}`);
+            }
+        }
+
+        // Fix stale jobs
+        async function fixStaleJobs() {
+            const baseUrl = 'http://localhost:8000';
+
+            log('INFO', 'Fixing stale jobs');
+            addSystemMessage('🔧 Fixing stale jobs...');
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/fix-stale-jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.fixed > 0) {
+                        addSystemMessage(`✅ Fixed ${result.fixed} stale job(s)!`);
+                        log('INFO', `Fixed jobs: ${JSON.stringify(result.jobs)}`);
+
+                        // Refresh stats to show updated job statuses
+                        setTimeout(() => refreshStats(), 1000);
+                    } else {
+                        addSystemMessage(`ℹ️ ${result.message}`);
+                        log('INFO', result.message);
+                    }
+                } else {
+                    addErrorMessage(`Failed to fix stale jobs: ${result.error || result.detail}`);
+                    log('ERROR', `Fix failed: ${JSON.stringify(result)}`);
+                }
+            } catch (error) {
+                log('ERROR', `Failed to fix stale jobs: ${error.message}`);
+                addErrorMessage(`Failed to fix stale jobs: ${error.message}`);
+            }
+        }
+
+        // Refresh database stats
+        async function refreshStats() {
+            const baseUrl = 'http://localhost:8000';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/stats`);
+                const stats = await response.json();
+
+                if (response.ok) {
+                    // Update animal counts
+                    document.getElementById('totalAnimals').textContent = stats.animals.total;
+                    document.getElementById('syncedAnimals').textContent = stats.animals.synced;
+
+                    // Update species breakdown
+                    const breakdown = document.getElementById('speciesBreakdown');
+                    breakdown.innerHTML = '';
+                    for (const [species, count] of Object.entries(stats.animals.by_species || {})) {
+                        breakdown.innerHTML += `<div style="color: #666;">• ${species}: ${count}</div>`;
+                    }
+
+                    // Update content file counts
+                    document.getElementById('totalContent').textContent = stats.content?.total || 0;
+
+                    // Update content breakdown
+                    const contentBreakdown = document.getElementById('contentBreakdown');
+                    contentBreakdown.innerHTML = '';
+                    for (const [type, count] of Object.entries(stats.content?.by_type || {})) {
+                        const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+                        contentBreakdown.innerHTML += `<div style="color: #666;">• ${typeLabel}: ${count}</div>`;
+                    }
+
+                    // Update latest job info
+                    const latestJobs = stats.scrape_jobs?.recent || [];
+                    if (latestJobs.length > 0) {
+                        const latest = latestJobs[0];
+                        const status = latest.status;
+                        const statusEmoji = status === 'COMPLETED' ? '✅' : status === 'RUNNING' ? '⏳' : status === 'FAILED' ? '❌' : '•';
+                        document.getElementById('latestJobInfo').innerHTML =
+                            `${statusEmoji} Job #${latest.id} (${latest.type}) - ${status}<br>` +
+                            `<span style="font-size: 10px; color: #999;">Scraped: ${latest.urls_scraped || 0}, Failed: ${latest.urls_failed || 0}</span>`;
+                    } else {
+                        document.getElementById('latestJobInfo').textContent = 'No jobs yet';
+                    }
+
+                    // Update retryable failed URLs count
+                    const retryableCount = stats.urls?.retryable_failed || 0;
+                    document.getElementById('retryableCount').textContent = retryableCount;
+                    if (retryableCount > 0) {
+                        document.getElementById('retryableCount').style.fontWeight = 'bold';
+                    } else {
+                        document.getElementById('retryableCount').style.fontWeight = 'normal';
+                    }
+
+                    log('INFO', 'Stats refreshed');
+                } else {
+                    log('ERROR', `Failed to fetch stats: ${stats.detail || stats.error}`);
+                }
+            } catch (error) {
+                log('ERROR', `Failed to fetch stats: ${error.message}`);
+            }
+        }
+
+        // Add scraper log
+        function addScraperLog(message, type = 'info') {
+            const logsDiv = document.getElementById('scraperLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': '#333',
+                'success': '#28a745',
+                'warning': '#ffc107',
+                'error': '#dc3545'
+            };
+            const color = colors[type] || colors['info'];
+
+            logsDiv.innerHTML += `<div style="color: ${color}; margin-bottom: 3px;">[${timestamp}] ${message}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        // Clear scraper logs
+        function clearScraperLogs() {
+            document.getElementById('scraperLogs').innerHTML = '';
+        }
+
+        // Poll stats during scraping
+        let statsPollingInterval = null;
+        function startStatsPolling() {
+            if (statsPollingInterval) return;
+            refreshStats();
+            statsPollingInterval = setInterval(refreshStats, 3000); // Poll every 3 seconds
+        }
+
+        function stopStatsPolling() {
+            if (statsPollingInterval) {
+                clearInterval(statsPollingInterval);
+                statsPollingInterval = null;
             }
         }
 
@@ -957,6 +1380,139 @@ Try asking about:
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 150) + 'px';
         });
+
+        // Database Viewer Functions
+        let currentTableData = {
+            table: '',
+            offset: 0,
+            limit: 20,
+            total: 0
+        };
+
+        async function loadTableData(offset = 0) {
+            const tableName = document.getElementById('tableSelect').value;
+
+            if (!tableName) {
+                document.getElementById('tableDataContainer').innerHTML = '<div style="color: #999;">Select a table to view its data...</div>';
+                document.getElementById('paginationControls').hidden = true;
+                document.getElementById('tableInfo').textContent = '';
+                return;
+            }
+
+            const baseUrl = 'http://localhost:8000';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/admin/tables/${tableName}?limit=${currentTableData.limit}&offset=${offset}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentTableData.table = tableName;
+                    currentTableData.offset = offset;
+                    currentTableData.total = result.total;
+
+                    displayTableData(result);
+                    updatePaginationControls();
+
+                    log('INFO', `Loaded ${result.data.length} rows from ${tableName}`);
+                } else {
+                    document.getElementById('tableDataContainer').innerHTML = `<div style="color: #dc3545;">Error: ${result.detail || result.error}</div>`;
+                    log('ERROR', `Failed to load table: ${result.detail || result.error}`);
+                }
+            } catch (error) {
+                document.getElementById('tableDataContainer').innerHTML = `<div style="color: #dc3545;">Error: ${error.message}</div>`;
+                log('ERROR', `Failed to load table: ${error.message}`);
+            }
+        }
+
+        function displayTableData(result) {
+            const container = document.getElementById('tableDataContainer');
+            const data = result.data;
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div style="color: #999;">No data found in this table.</div>';
+                document.getElementById('tableInfo').textContent = 'Total: 0 rows';
+                return;
+            }
+
+            // Update table info
+            const startRow = result.offset + 1;
+            const endRow = Math.min(result.offset + data.length, result.total);
+            document.getElementById('tableInfo').innerHTML =
+                `<strong>Showing ${startRow}-${endRow} of ${result.total} rows</strong>`;
+
+            // Get all column names from first row
+            const columns = Object.keys(data[0]);
+
+            // Build HTML table
+            let html = '<table style="width: 100%; border-collapse: collapse; font-size: 10px;">';
+
+            // Header
+            html += '<thead><tr>';
+            columns.forEach(col => {
+                html += `<th style="background: #667eea; color: white; padding: 6px; text-align: left; position: sticky; top: 0; border: 1px solid #ddd;">${escapeHtml(col)}</th>`;
+            });
+            html += '</tr></thead>';
+
+            // Body
+            html += '<tbody>';
+            data.forEach((row, idx) => {
+                const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                html += `<tr style="background: ${bgColor};">`;
+                columns.forEach(col => {
+                    let value = row[col];
+
+                    // Format the value
+                    if (value === null || value === undefined) {
+                        value = '<span style="color: #999;">null</span>';
+                    } else if (typeof value === 'boolean') {
+                        value = value ? '<span style="color: #28a745;">✓</span>' : '<span style="color: #dc3545;">✗</span>';
+                    } else if (typeof value === 'object') {
+                        value = escapeHtml(JSON.stringify(value));
+                    } else {
+                        value = escapeHtml(String(value));
+                    }
+
+                    html += `<td style="padding: 6px; border: 1px solid #ddd; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(String(row[col]))}">${value}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+
+            container.innerHTML = html;
+        }
+
+        function updatePaginationControls() {
+            const controls = document.getElementById('paginationControls');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (currentTableData.total > currentTableData.limit) {
+                controls.hidden = false;
+
+                // Enable/disable previous button
+                prevBtn.disabled = currentTableData.offset === 0;
+
+                // Enable/disable next button
+                const hasMore = (currentTableData.offset + currentTableData.limit) < currentTableData.total;
+                nextBtn.disabled = !hasMore;
+            } else {
+                controls.hidden = true;
+            }
+        }
+
+        function previousPage() {
+            if (currentTableData.offset > 0) {
+                const newOffset = Math.max(0, currentTableData.offset - currentTableData.limit);
+                loadTableData(newOffset);
+            }
+        }
+
+        function nextPage() {
+            if ((currentTableData.offset + currentTableData.limit) < currentTableData.total) {
+                const newOffset = currentTableData.offset + currentTableData.limit;
+                loadTableData(newOffset);
+            }
+        }
     </script>
 </body>
 </html>

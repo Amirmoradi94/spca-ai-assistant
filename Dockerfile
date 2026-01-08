@@ -15,22 +15,43 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    playwright install --with-deps chromium
 
 # Production stage
 FROM python:3.12-slim as runtime
 
 WORKDIR /app
 
-# Install runtime dependencies (for playwright/crawl4ai if needed)
+# Install runtime dependencies (for playwright/crawl4ai)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 \
     libxslt1.1 \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libatspi2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy Playwright browsers from builder
+COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 # Copy application code
 COPY src/ ./src/

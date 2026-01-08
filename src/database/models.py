@@ -14,7 +14,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.dialects.postgresql import JSON, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import enum
 
@@ -83,7 +83,7 @@ class Animal(Base):
     weight: Mapped[Optional[str]] = mapped_column(String(50))
     declawed: Mapped[bool] = mapped_column(Boolean, default=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    images_url: Mapped[Optional[list]] = mapped_column(JSON, default=list)
+    images_url: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
     source_url: Mapped[str] = mapped_column(String(500), nullable=False)
     status: Mapped[AnimalStatus] = mapped_column(
         Enum(AnimalStatus), default=AnimalStatus.AVAILABLE, index=True
@@ -171,9 +171,10 @@ class SyncLog(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     entity_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'animal' or 'content'
-    entity_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(500), nullable=False)
     action: Mapped[str] = mapped_column(String(20), nullable=False)  # 'create', 'update', 'delete'
     google_file_id: Mapped[Optional[str]] = mapped_column(String(100))
+    content_hash: Mapped[Optional[str]] = mapped_column(String(64))  # SHA256 hash for change detection
     synced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

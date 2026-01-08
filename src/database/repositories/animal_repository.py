@@ -72,6 +72,19 @@ class AnimalRepository(BaseRepository[Animal]):
         )
         return list(result.scalars().all())
 
+    async def get_modified_synced(self, limit: int = 100) -> List[Animal]:
+        """Get synced animals that were modified after last sync."""
+        result = await self.session.execute(
+            select(Animal)
+            .where(Animal.synced_to_google == True)  # noqa: E712
+            .where(Animal.status == AnimalStatus.AVAILABLE)
+            .where(Animal.last_modified_at.isnot(None))
+            .where(Animal.last_synced_at.isnot(None))
+            .where(Animal.last_modified_at > Animal.last_synced_at)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
     async def get_by_status(self, status: AnimalStatus, limit: int = 100) -> List[Animal]:
         """Get animals by status."""
         result = await self.session.execute(
@@ -116,6 +129,7 @@ class AnimalRepository(BaseRepository[Animal]):
                 if key != "id" and hasattr(existing, key):
                     setattr(existing, key, value)
             existing.last_scraped_at = datetime.utcnow()
+            existing.last_modified_at = datetime.utcnow()  # Track when content was modified
             await self.session.flush()
             return existing
         else:

@@ -293,6 +293,7 @@ class SyncLogRepository(BaseRepository[SyncLog]):
         google_file_id: Optional[str] = None,
         status: str = "success",
         error_message: Optional[str] = None,
+        content_hash: Optional[str] = None,
     ) -> SyncLog:
         """Create a sync log entry."""
         log = SyncLog(
@@ -302,6 +303,7 @@ class SyncLogRepository(BaseRepository[SyncLog]):
             google_file_id=google_file_id,
             status=status,
             error_message=error_message,
+            content_hash=content_hash,
         )
         self.session.add(log)
         await self.session.flush()

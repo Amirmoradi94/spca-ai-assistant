@@ -3,10 +3,11 @@
 import os
 import logging
 import tempfile
+import time
 from pathlib import Path
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
 
 from ..utils.config import get_settings
 
@@ -25,12 +26,39 @@ class FileSearchClient:
         if not self.api_key:
             raise ValueError("Google API key is required")
 
-        genai.configure(api_key=self.api_key)
+        # Configure the new genai client
+        self.client = genai.Client(api_key=self.api_key)
         self.store_name = store_name
         self._files_cache: dict[str, str] = {}  # filename -> file_id
+        self.file_search_store_name = None
+        self._setup_file_search_store()
+
+    def _setup_file_search_store(self) -> None:
+        """Get or create file search store."""
+        try:
+            # List existing file search stores
+            stores = list(self.client.file_search_stores.list())
+
+            # Look for existing store
+            for store in stores:
+                if hasattr(store, 'display_name') and store.display_name == self.store_name:
+                    self.file_search_store_name = store.name
+                    logger.info(f"Using existing file search store: {self.file_search_store_name}")
+                    return
+
+            # Create new store if not found
+            logger.info(f"Creating new file search store: {self.store_name}")
+            store = self.client.file_search_stores.create(
+                config={'display_name': self.store_name}
+            )
+            self.file_search_store_name = store.name
+            logger.info(f"Created file search store: {self.file_search_store_name}")
+        except Exception as e:
+            logger.error(f"Failed to setup file search store: {e}")
+            self.file_search_store_name = None
 
     async def upload_file(self, content: str, filename: str) -> str:
-        """Upload content as a file to Google."""
+        """Upload content as a file to Google and import into file search store."""
         # Create a temporary file
         with tempfile.NamedTemporaryFile(
             mode="w",
@@ -42,12 +70,36 @@ class FileSearchClient:
             temp_path = f.name
 
         try:
-            # Upload to Google
-            uploaded = genai.upload_file(
-                path=temp_path,
-                display_name=filename,
+            # Upload to Google using new client API
+            # The 'file' parameter accepts a file path as a string
+            uploaded = self.client.files.upload(
+                file=temp_path,
+                config={'display_name': filename}
             )
             logger.info(f"Uploaded file: {filename} -> {uploaded.name}")
+
+            # Import file into file search store if available
+            if self.file_search_store_name:
+                try:
+                    operation = self.client.file_search_stores.import_file(
+                        file_search_store_name=self.file_search_store_name,
+                        file_name=uploaded.name
+                    )
+
+                    # Wait for import operation to complete (with timeout)
+                    max_wait = 30  # seconds
+                    wait_time = 0
+                    while not operation.done and wait_time < max_wait:
+                        time.sleep(2)
+                        wait_time += 2
+                        operation = self.client.operations.get(operation)
+
+                    if operation.done:
+                        logger.info(f"Imported file into search store: {filename}")
+                    else:
+                        logger.warning(f"File import timed out: {filename}")
+                except Exception as e:
+                    logger.warning(f"Failed to import file into search store: {e}")
 
             # Cache the file ID
             self._files_cache[filename] = uploaded.name
@@ -61,7 +113,7 @@ class FileSearchClient:
     async def delete_file(self, file_id: str) -> bool:
         """Delete a file from Google."""
         try:
-            genai.delete_file(name=file_id)
+            self.client.files.delete(name=file_id)
             logger.info(f"Deleted file: {file_id}")
 
             # Remove from cache
@@ -77,12 +129,13 @@ class FileSearchClient:
     async def list_files(self) -> list[dict]:
         """List all uploaded files."""
         files = []
-        for f in genai.list_files():
+        files_response = self.client.files.list()
+        for f in files_response:
             files.append({
                 "name": f.name,
-                "display_name": f.display_name,
-                "uri": f.uri,
-                "state": f.state.name,
+                "display_name": getattr(f, "display_name", None),
+                "uri": getattr(f, "uri", None),
+                "state": getattr(f, "state", {}).get("name", "UNKNOWN") if hasattr(f, "state") else "UNKNOWN",
                 "size_bytes": getattr(f, "size_bytes", None),
             })
         return files
@@ -90,12 +143,12 @@ class FileSearchClient:
     async def get_file(self, file_id: str) -> Optional[dict]:
         """Get file information."""
         try:
-            f = genai.get_file(name=file_id)
+            f = self.client.files.get(name=file_id)
             return {
                 "name": f.name,
-                "display_name": f.display_name,
-                "uri": f.uri,
-                "state": f.state.name,
+                "display_name": getattr(f, "display_name", None),
+                "uri": getattr(f, "uri", None),
+                "state": getattr(f, "state", {}).get("name", "UNKNOWN") if hasattr(f, "state") else "UNKNOWN",
             }
         except Exception as e:
             logger.error(f"Failed to get file {file_id}: {e}")
@@ -117,6 +170,14 @@ class FileSearchClient:
 
     def format_animal_document(self, animal: dict) -> str:
         """Format animal data as a document for RAG."""
+        # Format images section
+        images_section = ""
+        images_url = animal.get('images_url', [])
+        if images_url and isinstance(images_url, list) and len(images_url) > 0:
+            images_section = "\n## Images\n"
+            for idx, img_url in enumerate(images_url[:5], 1):  # Limit to first 5 images
+                images_section += f"- Image {idx}: {img_url}\n"
+
         return f"""# {animal.get('name', 'Unknown')} - {animal.get('species', 'Animal')} for Adoption
 
 ## Basic Information
@@ -128,7 +189,7 @@ class FileSearchClient:
 - **Size:** {animal.get('size', 'Unknown')}
 - **Color:** {animal.get('color', 'Unknown')}
 - **Reference Number:** {animal.get('reference_number', 'Unknown')}
-
+{images_section}
 ## Description
 {animal.get('description', 'No description available.')}
 

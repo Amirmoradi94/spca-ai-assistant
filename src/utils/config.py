@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     log_file: Optional[str] = Field(default=None, alias="LOG_FILE")
 
+    # Scheduling
+    enable_auto_scraping: bool = Field(default=False, alias="ENABLE_AUTO_SCRAPING")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

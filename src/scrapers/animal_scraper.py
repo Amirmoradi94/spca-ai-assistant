@@ -135,6 +135,48 @@ class AnimalScraper(BaseScraper):
         self.logger.info(f"Found {len(pets)} pets on {url}")
         return pets
 
+    async def scrape_listing_with_pagination(self, base_url: str, max_pages: int = 50) -> list[dict[str, Any]]:
+        """
+        Scrape all pages of an adoption listing until no more pets are found.
+
+        Args:
+            base_url: Base URL like https://www.spca.com/en/adoption/cats-for-adoption/
+            max_pages: Maximum number of pages to scrape (safety limit)
+
+        Returns:
+            List of all pets found across all pages
+        """
+        all_pets = []
+        page = 1
+
+        # Remove trailing slash for consistent URL building
+        base_url = base_url.rstrip('/')
+
+        while page <= max_pages:
+            # Build page URL
+            if page == 1:
+                page_url = base_url + '/'
+            else:
+                page_url = f"{base_url}/page/{page}/"
+
+            self.logger.info(f"Scraping page {page}: {page_url}")
+
+            # Scrape this page
+            pets = await self.scrape_listing_page(page_url)
+
+            # If no pets found, we've reached the end
+            if not pets:
+                self.logger.info(f"No pets found on page {page}, stopping pagination")
+                break
+
+            all_pets.extend(pets)
+            self.logger.info(f"Page {page}: Found {len(pets)} pets (total so far: {len(all_pets)})")
+
+            page += 1
+
+        self.logger.info(f"Pagination complete. Total pets found: {len(all_pets)} across {page - 1} pages")
+        return all_pets
+
     async def scrape_animal_page(self, url: str) -> dict[str, Any]:
         """Scrape an individual animal page for full details."""
         result = await self.scrape(url)

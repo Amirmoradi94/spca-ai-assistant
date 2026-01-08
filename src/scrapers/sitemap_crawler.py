@@ -13,15 +13,17 @@ logger = logging.getLogger(__name__)
 class SitemapCrawler:
     """Crawl website sitemap to discover all URLs."""
 
-    def __init__(self, base_url: str = "https://www.spca.com/en/"):
+    def __init__(self, base_url: str = "https://www.spca.com/en/", sitemap_url: str = "https://www.spca.com/sitemap_index.xml"):
         self.base_url = base_url
+        self.sitemap_url = sitemap_url
 
     def discover_urls(self) -> List[str]:
         """Discover all URLs from sitemap."""
-        logger.info(f"Discovering URLs from sitemap: {self.base_url}")
+        logger.info(f"Discovering URLs from sitemap: {self.sitemap_url}")
 
         try:
-            tree = sitemap_tree_for_homepage(self.base_url)
+            # Use the explicit sitemap URL instead of auto-discovery
+            tree = sitemap_tree_for_homepage(self.sitemap_url)
             urls = [page.url for page in tree.all_pages()]
             logger.info(f"Discovered {len(urls)} URLs from sitemap")
             return urls

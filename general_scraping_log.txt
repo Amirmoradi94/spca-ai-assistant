@@ -1,0 +1,47 @@
+
+2026-01-06 04:47:33 - usp.helpers - INFO - Not retrying for URL https://www.spca.com/sitemap_news.xml⁠
+
+2026-01-06 04:47:33 - usp.objects.sitemap - INFO - Invalid sitemap: https://www.spca.com/sitemap_news.xml,⁠ reason: Unable to fetch sitemap from https://www.spca.com/sitemap_news.xml:⁠ 404 Not Found
+
+2026-01-06 04:47:33 - usp.fetch_parse - INFO - Fetching level 0 sitemap from https://www.spca.com/sitemap...⁠
+
+2026-01-06 04:47:33 - usp.helpers - INFO - Fetching URL https://www.spca.com/sitemap...⁠
+
+2026-01-06 04:47:34 - usp.helpers - INFO - Request for URL https://www.spca.com/sitemap⁠ failed: 404 Not Found
+
+2026-01-06 04:47:34 - usp.helpers - INFO - Not retrying for URL https://www.spca.com/sitemap⁠
+
+2026-01-06 04:47:34 - usp.objects.sitemap - INFO - Invalid sitemap: https://www.spca.com/sitemap,⁠ reason: Unable to fetch sitemap from https://www.spca.com/sitemap:⁠ 404 Not Found
+
+2026-01-06 04:47:34 - usp.fetch_parse - INFO - Fetching level 0 sitemap from https://www.spca.com/admin/config/search/xmlsitemap...⁠
+
+2026-01-06 04:47:34 - usp.helpers - INFO - Fetching URL https://www.spca.com/admin/config/search/xmlsitemap...⁠
+
+2026-01-06 04:47:35 - usp.helpers - INFO - Request for URL https://www.spca.com/admin/config/search/xmlsitemap⁠ failed: 404 Not Found
+
+2026-01-06 04:47:35 - usp.helpers - INFO - Not retrying for URL https://www.spca.com/admin/config/search/xmlsitemap⁠
+
+2026-01-06 04:47:35 - usp.objects.sitemap - INFO - Invalid sitemap: https://www.spca.com/admin/config/search/xmlsitemap,⁠ reason: Unable to fetch sitemap from https://www.spca.com/admin/config/search/xmlsitemap:⁠ 404 Not Found
+
+2026-01-06 04:47:35 - usp.fetch_parse - INFO - Fetching level 0 sitemap from https://www.spca.com/sitemap/sitemap-index.xml...⁠
+
+2026-01-06 04:47:35 - usp.helpers - INFO - Fetching URL https://www.spca.com/sitemap/sitemap-index.xml...⁠
+
+2026-01-06 04:47:36 - usp.helpers - INFO - Request for URL https://www.spca.com/sitemap/sitemap-index.xml⁠ failed: 404 Not Found
+
+2026-01-06 04:47:36 - usp.helpers - INFO - Not retrying for URL https://www.spca.com/sitemap/sitemap-index.xml⁠
+
+2026-01-06 04:47:36 - usp.objects.sitemap - INFO - Invalid sitemap: https://www.spca.com/sitemap/sitemap-index.xml,⁠ reason: Unable to fetch sitemap from https://www.spca.com/sitemap/sitemap-index.xml:⁠ 404 Not Found
+
+2026-01-06 04:47:36 - usp.fetch_parse - INFO - Fetching level 0 sitemap from https://www.spca.com/sitemap-news.xml.gz...⁠
+
+2026-01-06 04:47:36 - usp.helpers - INFO - Fetching URL https://www.spca.com/sitemap-news.xml.gz...⁠
+
+2026-01-06 04:47:37 - usp.helpers - INFO - Request for URL https://www.spca.com/sitemap-news.xml.gz⁠ failed: 404 Not Found
+
+2026-01-06 04:47:37 - usp.helpers - INFO - Not retrying for URL https://www.spca.com/sitemap-news.xml.gz⁠
+
+2026-01-06 04:47:37 - usp.objects.sitemap - INFO - Invalid sitemap: https://www.spca.com/sitemap-news.xml.gz,⁠ reason: Unable to fetch sitemap from https://www.spca.com/sitemap-news.xml.gz:⁠ 404 Not Found
+
+2026-01-06 04:47:37 - usp.fetch_parse - INFO - Fetching level 0 sitemap from https://www.spca.com/sitemap-news.xml...⁠
+

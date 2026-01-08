@@ -48,6 +48,7 @@ logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 scheduling:
+  enable_auto_scraping: false
   animal_scrape_hours: 4
   content_scrape_hour: 2
   sitemap_refresh_day: "sun"
