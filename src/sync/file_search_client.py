@@ -123,8 +123,14 @@ class FileSearchClient:
 
             return True
         except Exception as e:
-            logger.error(f"Failed to delete file {file_id}: {e}")
-            return False
+            # Files imported into file search stores cannot be deleted
+            # This is expected behavior, not an error
+            if "403" in str(e) or "PERMISSION_DENIED" in str(e):
+                logger.warning(f"Cannot delete file {file_id} (likely imported into file search store)")
+                return False
+            else:
+                logger.error(f"Failed to delete file {file_id}: {e}")
+                return False
 
     async def list_files(self) -> list[dict]:
         """List all uploaded files."""
@@ -160,10 +166,16 @@ class FileSearchClient:
         filename: str,
         existing_file_id: Optional[str] = None,
     ) -> str:
-        """Upload new content or update existing."""
-        # If we have an existing file, delete it first
+        """Upload new content or update existing.
+
+        Note: Files imported into file search stores cannot be deleted,
+        so we just upload a new version. Old files will remain in the store.
+        """
+        # Try to delete the old file (will fail for files in search stores)
         if existing_file_id:
-            await self.delete_file(existing_file_id)
+            deleted = await self.delete_file(existing_file_id)
+            if not deleted:
+                logger.info(f"Uploading new version of {filename} (old version will remain)")
 
         # Upload new content
         return await self.upload_file(content, filename)

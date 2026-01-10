@@ -245,7 +245,6 @@ class ContentUploader:
         synced = 0
         failed = 0
         skipped = 0
-        updated = 0
 
         # Get all content files
         content_files = list(self.content_dir.glob("*.txt"))
@@ -272,41 +271,51 @@ class ContentUploader:
                         existing_syncs = await sync_log_repo.get_by_entity("content", filename)
 
                         if existing_syncs:
-                            # File was synced before
+                            # File was synced before - skip to avoid duplicates
                             last_sync = existing_syncs[0]  # Most recent sync
 
-                            # Compare content hash
-                            if last_sync.status == "success" and last_sync.content_hash == content_hash:
-                                logger.info(f"Skipping {filename} - no changes detected (hash match)")
+                            if last_sync.status == "success":
+                                # Check if content changed
+                                if last_sync.content_hash == content_hash:
+                                    logger.info(f"Skipping {filename} - already synced, no changes")
+                                else:
+                                    logger.info(f"Skipping {filename} - already synced (content changed but cannot update)")
                                 skipped += 1
-                                continue  # Skip upload
+                                continue  # Skip - file already exists
+                            else:
+                                # Previous sync failed, retry upload
+                                logger.info(f"Retrying {filename} - previous sync failed")
+                                file_id = await self.client.upload_file(content, filename)
+                                action = "create"
 
-                            # Content changed - need to update
-                            logger.info(f"Content changed for {filename}, re-uploading")
-                            existing_file_id = last_sync.google_file_id
-                            file_id = await self.client.upload_or_update(
-                                content, filename, existing_file_id
-                            )
-                            action = "update"
-                            if file_id:
-                                updated += 1
+                                if file_id:
+                                    await sync_log_repo.log_sync(
+                                        entity_type="content",
+                                        entity_id=filename,
+                                        action=action,
+                                        google_file_id=file_id,
+                                        content_hash=content_hash,
+                                    )
+                                    synced += 1
+                                else:
+                                    failed += 1
                         else:
                             # New file - upload
                             logger.info(f"New file {filename}, uploading")
                             file_id = await self.client.upload_file(content, filename)
                             action = "create"
 
-                        if file_id:
-                            await sync_log_repo.log_sync(
-                                entity_type="content",
-                                entity_id=filename,
-                                action=action,
-                                google_file_id=file_id,
-                                content_hash=content_hash,
-                            )
-                            synced += 1
-                        else:
-                            failed += 1
+                            if file_id:
+                                await sync_log_repo.log_sync(
+                                    entity_type="content",
+                                    entity_id=filename,
+                                    action=action,
+                                    google_file_id=file_id,
+                                    content_hash=content_hash,
+                                )
+                                synced += 1
+                            else:
+                                failed += 1
 
                     except Exception as e:
                         logger.error(f"Failed to sync content file {filepath}: {e}")
@@ -314,20 +323,20 @@ class ContentUploader:
 
                 await session.commit()
                 logger.info(
-                    f"Batch complete: {synced} total synced ({updated} updates), "
+                    f"Batch complete: {synced} total synced, "
                     f"{skipped} skipped, {failed} failed"
                 )
 
         await emit_event(
             EventType.SYNC_COMPLETED,
-            {"type": "content", "synced": synced, "skipped": skipped, "updated": updated, "failed": failed},
+            {"type": "content", "synced": synced, "skipped": skipped, "failed": failed},
         )
 
         logger.info(
-            f"Content sync complete: {synced} synced ({updated} updates), "
+            f"Content sync complete: {synced} synced, "
             f"{skipped} skipped, {failed} failed"
         )
-        return {"synced": synced, "skipped": skipped, "updated": updated, "failed": failed}
+        return {"synced": synced, "skipped": skipped, "failed": failed}
 
     async def full_sync(self) -> dict:
         """Run a full sync of all content."""
