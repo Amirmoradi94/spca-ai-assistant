@@ -127,7 +127,14 @@ async def test_chatbot():
     """Serve the test chatbot interface."""
     test_file = Path(__file__).parent.parent.parent / "test_chatbot.html"
     if test_file.exists():
-        return FileResponse(test_file)
+        return FileResponse(
+            test_file,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return JSONResponse(
         status_code=404,
         content={"error": "Test chatbot interface not found"}
