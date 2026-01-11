@@ -2,10 +2,12 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .routes import chat, health
 from ..chatbot.session_manager import get_session_manager
@@ -93,6 +95,12 @@ app.include_router(chat.router)
 app.include_router(health.router)
 app.include_router(health.admin_router)
 
+# Mount static files for widget
+widget_dir = Path(__file__).parent.parent.parent / "widget"
+if widget_dir.exists():
+    app.mount("/widget", StaticFiles(directory=str(widget_dir)), name="widget")
+    logger.info(f"Widget static files mounted from {widget_dir}")
+
 
 # Root endpoint
 @app.get("/")
@@ -107,8 +115,23 @@ async def root():
             "health": "/health",
             "docs": "/docs",
             "admin": "/api/v1/admin",
+            "test": "/test",
         }
     }
+
+
+# Test chatbot interface
+@app.get("/test")
+@app.get("/test_chatbot")
+async def test_chatbot():
+    """Serve the test chatbot interface."""
+    test_file = Path(__file__).parent.parent.parent / "test_chatbot.html"
+    if test_file.exists():
+        return FileResponse(test_file)
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Test chatbot interface not found"}
+    )
 
 
 def main():

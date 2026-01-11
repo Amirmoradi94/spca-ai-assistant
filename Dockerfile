@@ -56,7 +56,7 @@ COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 # Copy application code
 COPY src/ ./src/
 COPY config/ ./config/
-COPY scripts/ ./scripts/
+COPY test_chatbot.html ./test_chatbot.html
 
 # Create directories for content and logs
 RUN mkdir -p /app/content/general /app/content/animals /app/logs

@@ -32,6 +32,7 @@ services:
     volumes:
       - ./content:/app/content
       - ./logs:/app/logs
+      - ./widget:/app/widget
     depends_on:
       db:
         condition: service_healthy

@@ -521,7 +521,7 @@
 
             <div class="controls">
                 <label for="apiEndpoint">API Endpoint:</label>
-                <input type="text" id="apiEndpoint" value="http://localhost:8000/api/v1/chat">
+                <input type="text" id="apiEndpoint" value="https://devnook.xyz/api/v1/chat">
             </div>
 
             <div class="controls">
@@ -940,7 +940,7 @@ Try asking about:
 
         // Scrape animals by category
         async function scrapeAnimals(category) {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
             const categoryNames = {
                 'all': 'All Animals',
                 'cats': 'Cats',
@@ -1003,7 +1003,7 @@ Try asking about:
 
         // Scrape general content
         async function scrapeContent() {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             log('INFO', 'Starting general content scrape');
             addSystemMessage('🔄 Starting general content scrape... This may take several minutes.');
@@ -1052,7 +1052,7 @@ Try asking about:
 
         // Sync to Google File Search
         async function syncToGoogle(syncType = 'all') {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             const syncTypeNames = {
                 'animals': 'Animals',
@@ -1107,7 +1107,7 @@ Try asking about:
 
         // Retry failed URLs
         async function retryFailedUrls() {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             log('INFO', 'Starting retry of failed URLs');
             addSystemMessage('🔄 Retrying failed URLs...');
@@ -1158,7 +1158,7 @@ Try asking about:
 
         // Refresh files in chatbot
         async function refreshFiles() {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             log('INFO', 'Refreshing chatbot files');
             addSystemMessage('🔄 Refreshing chatbot files...');
@@ -1185,7 +1185,7 @@ Try asking about:
 
         // Fix stale jobs
         async function fixStaleJobs() {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             log('INFO', 'Fixing stale jobs');
             addSystemMessage('🔧 Fixing stale jobs...');
@@ -1223,7 +1223,7 @@ Try asking about:
 
         // Refresh database stats
         async function refreshStats() {
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/stats`);
@@ -1399,7 +1399,7 @@ Try asking about:
                 return;
             }
 
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://devnook.xyz';
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/tables/${tableName}?limit=${currentTableData.limit}&offset=${offset}`);
