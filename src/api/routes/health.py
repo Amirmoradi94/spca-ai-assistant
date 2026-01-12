@@ -238,116 +238,131 @@ async def retry_failed_urls() -> dict:
 @admin_router.get("/stats")
 async def get_admin_stats() -> dict:
     """Get system statistics."""
+    import asyncio
     from ...database.session import get_session
     from ...database.repositories.animal_repository import AnimalRepository
     from ...database.repositories.scrape_repository import ScrapeJobRepository
     from sqlalchemy import select, func
     from ...database.models import Animal, ScrapeJob, ScrapedURL, SyncLog
 
-    async with get_session() as session:
-        animal_repo = AnimalRepository(session)
-        job_repo = ScrapeJobRepository(session)
+    try:
+        async with asyncio.timeout(5):  # 5 second timeout for stats query
+            async with get_session() as session:
+                animal_repo = AnimalRepository(session)
+                job_repo = ScrapeJobRepository(session)
 
-        # Get animal counts
-        species_counts = await animal_repo.count_by_species()
-        total_animals = sum(species_counts.values())
+                # Get animal counts
+                species_counts = await animal_repo.count_by_species()
+                total_animals = sum(species_counts.values())
 
-        # Get synced count
-        synced_result = await session.execute(
-            select(func.count(Animal.id)).where(Animal.synced_to_google == True)
-        )
-        synced_count = synced_result.scalar() or 0
+                # Get synced count
+                synced_result = await session.execute(
+                    select(func.count(Animal.id)).where(Animal.synced_to_google == True)
+                )
+                synced_count = synced_result.scalar() or 0
 
-        # Get recent jobs (last 5)
-        jobs_result = await session.execute(
-            select(ScrapeJob).order_by(ScrapeJob.id.desc()).limit(5)
-        )
-        recent_jobs = jobs_result.scalars().all()
+                # Get recent jobs (last 5)
+                jobs_result = await session.execute(
+                    select(ScrapeJob).order_by(ScrapeJob.id.desc()).limit(5)
+                )
+                recent_jobs = jobs_result.scalars().all()
 
-        # Get latest job
-        latest_job = await job_repo.get_latest()
+                # Get latest job
+                latest_job = await job_repo.get_latest()
 
-        # Get URL stats
-        url_stats_result = await session.execute(
-            select(
-                ScrapedURL.scrape_status,
-                func.count(ScrapedURL.id)
-            ).group_by(ScrapedURL.scrape_status)
-        )
-        url_stats = {status: count for status, count in url_stats_result.all()}
+                # Get URL stats
+                url_stats_result = await session.execute(
+                    select(
+                        ScrapedURL.scrape_status,
+                        func.count(ScrapedURL.id)
+                    ).group_by(ScrapedURL.scrape_status)
+                )
+                url_stats = {status: count for status, count in url_stats_result.all()}
 
-        # Get failed URLs that can be retried (retry_count < 3)
-        from ...database.repositories.scrape_repository import ScrapedURLRepository
-        url_repo = ScrapedURLRepository(session)
-        retryable_urls = await url_repo.get_failed(max_retries=3)
-        retryable_count = len(retryable_urls)
+                # Get failed URLs that can be retried (retry_count < 3)
+                from ...database.repositories.scrape_repository import ScrapedURLRepository
+                url_repo = ScrapedURLRepository(session)
+                retryable_urls = await url_repo.get_failed(max_retries=3)
+                retryable_count = len(retryable_urls)
 
-        # Get content file stats
-        content_stats_result = await session.execute(
-            select(
-                ScrapedURL.url_type,
-                func.count(ScrapedURL.id)
-            ).where(ScrapedURL.scrape_status == ScrapeStatus.SUCCESS)
-            .where(ScrapedURL.url_type.in_([URLType.GENERAL, URLType.SERVICE, URLType.TIPS]))
-            .group_by(ScrapedURL.url_type)
-        )
-        content_by_type = {url_type.value: count for url_type, count in content_stats_result.all()}
-        total_content = sum(content_by_type.values())
+                # Get content file stats
+                content_stats_result = await session.execute(
+                    select(
+                        ScrapedURL.url_type,
+                        func.count(ScrapedURL.id)
+                    ).where(ScrapedURL.scrape_status == ScrapeStatus.SUCCESS)
+                    .where(ScrapedURL.url_type.in_([URLType.GENERAL, URLType.SERVICE, URLType.TIPS]))
+                    .group_by(ScrapedURL.url_type)
+                )
+                content_by_type = {url_type.value: count for url_type, count in content_stats_result.all()}
+                total_content = sum(content_by_type.values())
 
-        # Get sync stats - get latest syncs by entity type
-        sync_animals_result = await session.execute(
-            select(SyncLog).where(SyncLog.entity_type == "animal").order_by(SyncLog.id.desc()).limit(1)
-        )
-        latest_animal_sync = sync_animals_result.scalar_one_or_none()
+                # Get sync stats - get latest syncs by entity type
+                sync_animals_result = await session.execute(
+                    select(SyncLog).where(SyncLog.entity_type == "animal").order_by(SyncLog.id.desc()).limit(1)
+                )
+                latest_animal_sync = sync_animals_result.scalar_one_or_none()
 
-        sync_content_result = await session.execute(
-            select(SyncLog).where(SyncLog.entity_type == "content").order_by(SyncLog.id.desc()).limit(1)
-        )
-        latest_content_sync = sync_content_result.scalar_one_or_none()
+                sync_content_result = await session.execute(
+                    select(SyncLog).where(SyncLog.entity_type == "content").order_by(SyncLog.id.desc()).limit(1)
+                )
+                latest_content_sync = sync_content_result.scalar_one_or_none()
 
-        return {
-            "animals": {
-                "total": total_animals,
-                "synced": synced_count,
-                "by_species": species_counts,
-            },
-            "content": {
-                "total": total_content,
-                "by_type": content_by_type,
-            },
-            "scrape_jobs": {
-                "total": len(recent_jobs),
-                "recent": [
-                    {
-                        "id": job.id,
-                        "type": job.job_type.value,
-                        "status": job.status.value,
-                        "started_at": job.started_at.isoformat() if job.started_at else None,
-                        "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-                        "urls_discovered": job.urls_discovered,
-                        "urls_scraped": job.urls_scraped,
-                        "urls_failed": job.urls_failed,
+                return {
+                    "animals": {
+                        "total": total_animals,
+                        "synced": synced_count,
+                        "by_species": species_counts,
+                    },
+                    "content": {
+                        "total": total_content,
+                        "by_type": content_by_type,
+                    },
+                    "scrape_jobs": {
+                        "total": len(recent_jobs),
+                        "recent": [
+                            {
+                                "id": job.id,
+                                "type": job.job_type.value,
+                                "status": job.status.value,
+                                "started_at": job.started_at.isoformat() if job.started_at else None,
+                                "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+                                "urls_discovered": job.urls_discovered,
+                                "urls_scraped": job.urls_scraped,
+                                "urls_failed": job.urls_failed,
+                            }
+                            for job in recent_jobs
+                        ],
+                    },
+                    "urls": {
+                        "by_status": url_stats,
+                        "retryable_failed": retryable_count,
+                    },
+                    "latest_sync": {
+                        "animals": {
+                            "entity_type": latest_animal_sync.entity_type if latest_animal_sync else None,
+                            "status": latest_animal_sync.status if latest_animal_sync else None,
+                            "synced_at": latest_animal_sync.synced_at.isoformat() if latest_animal_sync and latest_animal_sync.synced_at else None,
+                        } if latest_animal_sync else None,
+                        "content": {
+                            "entity_type": latest_content_sync.entity_type if latest_content_sync else None,
+                            "status": latest_content_sync.status if latest_content_sync else None,
+                            "synced_at": latest_content_sync.synced_at.isoformat() if latest_content_sync and latest_content_sync.synced_at else None,
+                        } if latest_content_sync else None,
                     }
-                    for job in recent_jobs
-                ],
-            },
-            "urls": {
-                "by_status": url_stats,
-                "retryable_failed": retryable_count,
-            },
-            "latest_sync": {
-                "animals": {
-                    "entity_type": latest_animal_sync.entity_type if latest_animal_sync else None,
-                    "status": latest_animal_sync.status if latest_animal_sync else None,
-                    "synced_at": latest_animal_sync.synced_at.isoformat() if latest_animal_sync and latest_animal_sync.synced_at else None,
-                } if latest_animal_sync else None,
-                "content": {
-                    "entity_type": latest_content_sync.entity_type if latest_content_sync else None,
-                    "status": latest_content_sync.status if latest_content_sync else None,
-                    "synced_at": latest_content_sync.synced_at.isoformat() if latest_content_sync and latest_content_sync.synced_at else None,
-                } if latest_content_sync else None,
-            }
-        }
+                }
+    except (asyncio.TimeoutError, TimeoutError) as e:
+        logger.warning(f"Stats query timed out (database busy): {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Database temporarily busy. Please try again in a moment."
+        )
+    except Exception as e:
+        logger.error(f"Error getting stats: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get stats: {str(e)}"
+        )
 
 
 @admin_router.post("/fix-stale-jobs")

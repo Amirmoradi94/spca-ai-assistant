@@ -938,9 +938,15 @@ Try asking about:
             }
         }
 
+        // Get base URL (auto-detect local vs production)
+        function getBaseUrl() {
+            // Use window.location to automatically detect the host
+            return window.location.origin;
+        }
+
         // Scrape animals by category
         async function scrapeAnimals(category) {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
             const categoryNames = {
                 'all': 'All Animals',
                 'cats': 'Cats',
@@ -1003,7 +1009,7 @@ Try asking about:
 
         // Scrape general content
         async function scrapeContent() {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             log('INFO', 'Starting general content scrape');
             addSystemMessage('🔄 Starting general content scrape... This may take several minutes.');
@@ -1052,7 +1058,7 @@ Try asking about:
 
         // Sync to Google File Search
         async function syncToGoogle(syncType = 'all') {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             const syncTypeNames = {
                 'animals': 'Animals',
@@ -1081,16 +1087,29 @@ Try asking about:
                 const result = await response.json();
 
                 if (response.ok) {
-                    addSystemMessage(`✅ Sync completed (${syncName})! Files synced: ${result.synced || 'N/A'}`);
-                    addScraperLog(`✅ Sync completed (${syncName})!`, 'success');
-                    addScraperLog(`📤 Files synced: ${result.synced || 0}`, 'success');
-                    addScraperLog(`❌ Failed: ${result.failed || 0}`, result.failed > 0 ? 'warning' : 'info');
-                    log('INFO', `Sync completed (${syncName}): ${JSON.stringify(result)}`);
+                    if (result.status === 'started') {
+                        // Background sync started
+                        addSystemMessage(`✅ Sync started in background (${syncName})! Check logs for progress.`);
+                        addScraperLog(`✅ Sync started in background (${syncName})!`, 'success');
+                        addScraperLog(`⏳ Processing files... This may take several minutes.`, 'info');
+                        addScraperLog(`💡 Watch the logs below for real-time progress`, 'info');
+                        log('INFO', `Sync started in background: ${syncName}`);
 
-                    setTimeout(() => {
-                        refreshStats();
-                        stopStatsPolling();
-                    }, 2000);
+                        // Keep polling stats to show progress
+                        // Stats will auto-refresh every 3 seconds while polling is active
+                    } else {
+                        // Sync completed (old behavior for backwards compatibility)
+                        addSystemMessage(`✅ Sync completed (${syncName})! Files synced: ${result.synced || 'N/A'}`);
+                        addScraperLog(`✅ Sync completed (${syncName})!`, 'success');
+                        addScraperLog(`📤 Files synced: ${result.synced || 0}`, 'success');
+                        addScraperLog(`❌ Failed: ${result.failed || 0}`, result.failed > 0 ? 'warning' : 'info');
+                        log('INFO', `Sync completed (${syncName}): ${JSON.stringify(result)}`);
+
+                        setTimeout(() => {
+                            refreshStats();
+                            stopStatsPolling();
+                        }, 2000);
+                    }
                 } else {
                     addErrorMessage(`Failed to sync: ${result.error || result.detail}`);
                     addScraperLog(`❌ Error: ${result.error || result.detail}`, 'error');
@@ -1107,7 +1126,7 @@ Try asking about:
 
         // Retry failed URLs
         async function retryFailedUrls() {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             log('INFO', 'Starting retry of failed URLs');
             addSystemMessage('🔄 Retrying failed URLs...');
@@ -1158,7 +1177,7 @@ Try asking about:
 
         // Refresh files in chatbot
         async function refreshFiles() {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             log('INFO', 'Refreshing chatbot files');
             addSystemMessage('🔄 Refreshing chatbot files...');
@@ -1185,7 +1204,7 @@ Try asking about:
 
         // Fix stale jobs
         async function fixStaleJobs() {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             log('INFO', 'Fixing stale jobs');
             addSystemMessage('🔧 Fixing stale jobs...');
@@ -1223,7 +1242,7 @@ Try asking about:
 
         // Refresh database stats
         async function refreshStats() {
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/stats`);
@@ -1399,7 +1418,7 @@ Try asking about:
                 return;
             }
 
-            const baseUrl = 'https://devnook.xyz';
+            const baseUrl = getBaseUrl();
 
             try {
                 const response = await fetch(`${baseUrl}/api/v1/admin/tables/${tableName}?limit=${currentTableData.limit}&offset=${offset}`);
