@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 
 from ..schemas import HealthResponse, ScrapeJobRequest, ScrapeJobResponse, SyncRequest, SyncResponse
 from ...pipeline.orchestrator import PipelineOrchestrator
@@ -94,18 +94,8 @@ async def trigger_scrape(request: ScrapeJobRequest) -> ScrapeJobResponse:
         )
 
 
-@admin_router.post("/sync", response_model=SyncResponse)
-async def trigger_sync(request: SyncRequest) -> SyncResponse:
-    """
-    Trigger a sync to Google File Search.
-
-    Sync types:
-    - 'animals': Sync only animals
-    - 'content': Sync only content files
-    - 'all': Sync everything
-
-    **Note:** This endpoint should be protected in production.
-    """
+async def _run_sync_task(sync_type: str):
+    """Background task to run sync operation."""
     settings = get_settings()
 
     uploader = ContentUploader(
@@ -115,41 +105,51 @@ async def trigger_sync(request: SyncRequest) -> SyncResponse:
     )
 
     try:
-        if request.sync_type == "animals":
+        if sync_type == "animals":
             result = await uploader.sync_all_animals()
-            return SyncResponse(
-                status="completed",
-                synced=result["synced"],
-                failed=result["failed"],
-            )
-        elif request.sync_type == "content":
+            logger.info(f"Sync completed: {result}")
+        elif sync_type == "content":
             result = await uploader.sync_content_files()
-            return SyncResponse(
-                status="completed",
-                synced=result["synced"],
-                failed=result["failed"],
-            )
-        elif request.sync_type == "all":
+            logger.info(f"Sync completed: {result}")
+        elif sync_type == "all":
             result = await uploader.full_sync()
-            total_synced = result["animals"]["synced"] + result["content"]["synced"]
-            total_failed = result["animals"]["failed"] + result["content"]["failed"]
-            return SyncResponse(
-                status="completed",
-                synced=total_synced,
-                failed=total_failed,
-            )
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid sync type: {request.sync_type}"
-            )
-
+            logger.info(f"Sync completed: {result}")
     except Exception as e:
-        logger.error(f"Sync failed: {e}")
+        logger.error(f"Background sync failed: {e}", exc_info=True)
+
+
+@admin_router.post("/sync", response_model=SyncResponse)
+async def trigger_sync(request: SyncRequest, background_tasks: BackgroundTasks) -> SyncResponse:
+    """
+    Trigger a sync to Google File Search (runs in background).
+
+    Sync types:
+    - 'animals': Sync only animals
+    - 'content': Sync only content files
+    - 'all': Sync everything
+
+    Returns immediately with status "started". Check logs for completion.
+
+    **Note:** This endpoint should be protected in production.
+    """
+    # Validate sync type
+    if request.sync_type not in ["animals", "content", "all"]:
         raise HTTPException(
-            status_code=500,
-            detail=f"Sync failed: {str(e)}"
+            status_code=400,
+            detail=f"Invalid sync type: {request.sync_type}. Must be 'animals', 'content', or 'all'"
         )
+
+    # Add sync task to background
+    background_tasks.add_task(_run_sync_task, request.sync_type)
+
+    logger.info(f"Sync task started in background: {request.sync_type}")
+
+    # Return immediately
+    return SyncResponse(
+        status="started",
+        synced=0,
+        failed=0,
+    )
 
 
 @admin_router.post("/retry-failed", response_model=dict)
