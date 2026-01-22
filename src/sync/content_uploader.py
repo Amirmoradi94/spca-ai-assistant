@@ -185,13 +185,19 @@ class ContentUploader:
                 await session.commit()
                 logger.info(f"Batch complete: {synced} total synced ({updated} updates), {failed} total failed")
 
+        # Phase 3: Remove adopted animals from File Search
+        logger.info("Phase 3: Removing adopted animals from File Search")
+        adopted_result = await self.sync_adopted_animals()
+        removed = adopted_result.get("removed", 0)
+        logger.info(f"Removed {removed} adopted animals from File Search")
+
         await emit_event(
             EventType.SYNC_COMPLETED,
-            {"type": "animals", "synced": synced, "updated": updated, "failed": failed},
+            {"type": "animals", "synced": synced, "updated": updated, "failed": failed, "removed": removed},
         )
 
-        logger.info(f"Animal sync complete: {synced} total synced ({updated} updates), {failed} failed")
-        return {"synced": synced, "updated": updated, "failed": failed}
+        logger.info(f"Animal sync complete: {synced} total synced ({updated} updates), {failed} failed, {removed} adopted removed")
+        return {"synced": synced, "updated": updated, "failed": failed, "removed": removed}
 
     async def sync_adopted_animals(self) -> dict:
         """Remove adopted animals from File Search."""

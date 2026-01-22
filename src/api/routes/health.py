@@ -51,18 +51,8 @@ async def root() -> dict:
 admin_router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
 
-@admin_router.post("/scrape", response_model=ScrapeJobResponse)
-async def trigger_scrape(request: ScrapeJobRequest) -> ScrapeJobResponse:
-    """
-    Trigger a scrape job manually.
-
-    Job types:
-    - 'animals': Scrape only animal pages
-    - 'content': Scrape only general content
-    - 'full': Full scrape (sitemap + animals + content)
-
-    **Note:** This endpoint should be protected in production.
-    """
+async def _run_scrape_task(job_type: str, filters: dict = None):
+    """Background task to run scrape operation."""
     settings = get_settings()
 
     orchestrator = PipelineOrchestrator(
@@ -72,26 +62,51 @@ async def trigger_scrape(request: ScrapeJobRequest) -> ScrapeJobResponse:
     )
 
     try:
-        if request.job_type == "animals":
+        if job_type == "animals":
             result = await orchestrator.run_animal_scrape()
-        elif request.job_type == "content":
+            logger.info(f"Animal scrape completed: {result}")
+        elif job_type == "content":
             result = await orchestrator.run_content_scrape()
-        elif request.job_type == "full":
+            logger.info(f"Content scrape completed: {result}")
+        elif job_type == "full":
             result = await orchestrator.run_full_scrape()
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid job type: {request.job_type}. Must be 'animals', 'content', or 'full'"
-            )
-
-        return ScrapeJobResponse(**result)
-
+            logger.info(f"Full scrape completed: {result}")
     except Exception as e:
-        logger.error(f"Scrape job failed: {e}")
+        logger.error(f"Background scrape failed: {e}", exc_info=True)
+
+
+@admin_router.post("/scrape")
+async def trigger_scrape(request: ScrapeJobRequest, background_tasks: BackgroundTasks) -> dict:
+    """
+    Trigger a scrape job manually (runs in background).
+
+    Job types:
+    - 'animals': Scrape only animal pages
+    - 'content': Scrape only general content
+    - 'full': Full scrape (sitemap + animals + content)
+
+    Returns immediately with status "started". Check logs or database for completion.
+
+    **Note:** This endpoint should be protected in production.
+    """
+    # Validate job type
+    if request.job_type not in ["animals", "content", "full"]:
         raise HTTPException(
-            status_code=500,
-            detail=f"Scrape job failed: {str(e)}"
+            status_code=400,
+            detail=f"Invalid job type: {request.job_type}. Must be 'animals', 'content', or 'full'"
         )
+
+    # Add scrape task to background
+    background_tasks.add_task(_run_scrape_task, request.job_type, request.filters)
+
+    logger.info(f"Scrape task started in background: {request.job_type}")
+
+    # Return immediately
+    return {
+        "status": "started",
+        "job_type": request.job_type,
+        "message": "Scrape job started in background. Check logs or /admin/stats for progress."
+    }
 
 
 async def _run_sync_task(sync_type: str):
