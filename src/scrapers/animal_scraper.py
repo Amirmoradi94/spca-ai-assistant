@@ -161,8 +161,13 @@ class AnimalScraper(BaseScraper):
 
             self.logger.info(f"Scraping page {page}: {page_url}")
 
-            # Scrape this page
-            pets = await self.scrape_listing_page(page_url)
+            # Scrape this page (handle 404 errors gracefully)
+            try:
+                pets = await self.scrape_listing_page(page_url)
+            except Exception as e:
+                # 404 or other error means we've reached the end
+                self.logger.info(f"Pagination ended at page {page}: {str(e)}")
+                break
 
             # If no pets found, we've reached the end
             if not pets:
