@@ -9,7 +9,7 @@ from ..schemas import HealthResponse, ScrapeJobRequest, ScrapeJobResponse, SyncR
 from ...pipeline.orchestrator import PipelineOrchestrator
 from ...sync.content_uploader import ContentUploader
 from ...utils.config import get_settings
-from ...database.models import ScrapeStatus, URLType
+from ...database.models import ScrapeStatus, URLType, AnimalStatus
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
         )
 
     # Add scrape task to background
-    background_tasks.add_task(_run_scrape_task, request.job_type, request.filters)
+    background_tasks.add_task(_run_scrape_task, request.job_type, None)
 
     logger.info(f"Scrape task started in background: {request.job_type}")
 
@@ -270,9 +270,12 @@ async def get_admin_stats() -> dict:
                 species_counts = await animal_repo.count_by_species()
                 total_animals = sum(species_counts.values())
 
-                # Get synced count
+                # Get synced count (only available animals)
                 synced_result = await session.execute(
-                    select(func.count(Animal.id)).where(Animal.synced_to_google == True)
+                    select(func.count(Animal.id)).where(
+                        Animal.synced_to_google == True,
+                        Animal.status == AnimalStatus.AVAILABLE
+                    )
                 )
                 synced_count = synced_result.scalar() or 0
 

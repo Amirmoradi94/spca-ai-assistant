@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .routes import chat, health
+from .routes import chat, health, analytics
 from ..chatbot.session_manager import get_session_manager
 from ..database.session import init_db
 from ..utils.config import get_settings
@@ -94,12 +94,38 @@ async def internal_error_handler(request, exc):
 app.include_router(chat.router)
 app.include_router(health.router)
 app.include_router(health.admin_router)
+app.include_router(analytics.router)
 
 # Mount static files for widget
 widget_dir = Path(__file__).parent.parent.parent / "widget"
 if widget_dir.exists():
     app.mount("/widget", StaticFiles(directory=str(widget_dir)), name="widget")
     logger.info(f"Widget static files mounted from {widget_dir}")
+
+# Mount dashboard static files
+dashboard_dir = Path(__file__).parent.parent / "dashboard"
+if dashboard_dir.exists():
+    app.mount("/dashboard", StaticFiles(directory=str(dashboard_dir)), name="dashboard")
+    logger.info(f"Dashboard static files mounted from {dashboard_dir}")
+
+
+@app.get("/dashboard")
+async def dashboard():
+    """Serve the analytics dashboard."""
+    dashboard_file = Path(__file__).parent.parent / "dashboard" / "dashboard.html"
+    if dashboard_file.exists():
+        return FileResponse(
+            dashboard_file,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Dashboard not found"}
+    )
 
 
 # Root endpoint
@@ -110,11 +136,13 @@ async def root():
         "service": "SPCA AI Assistant API",
         "version": "1.0.0",
         "status": "running",
-        "endpoints": {
+            "endpoints": {
             "chat": "/api/v1/chat",
             "health": "/health",
             "docs": "/docs",
             "admin": "/api/v1/admin",
+            "analytics": "/api/v1/analytics",
+            "dashboard": "/dashboard",
             "test": "/test",
         }
     }

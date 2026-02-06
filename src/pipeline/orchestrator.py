@@ -187,6 +187,9 @@ class PipelineOrchestrator:
         scraped = 0
         failed = 0
 
+        # Track URLs processed in this session to avoid duplicates
+        processed_urls = set()
+
         # Get current animals to detect adopted ones
         existing_refs = await animal_repo.get_all_reference_numbers()
         found_refs = set()
@@ -203,12 +206,24 @@ class PipelineOrchestrator:
                     pet_cards = await self.animal_scraper.scrape_listing_with_pagination(listing_url)
                     discovered += len(pet_cards)
 
-                    for pet_card in pet_cards:
+                    logger.info(f"Processing {len(pet_cards)} pet cards from {listing_url}")
+
+                    for idx, pet_card in enumerate(pet_cards, 1):
                         pet_url = pet_card.get("url")
                         if not pet_url:
+                            logger.warning(f"Pet card {idx} has no URL, skipping")
                             continue
 
+                        # Skip if already processed in this session (handles duplicate listings)
+                        if pet_url in processed_urls:
+                            logger.debug(f"Skipping duplicate URL: {pet_url}")
+                            continue
+
+                        processed_urls.add(pet_url)
+
                         try:
+                            logger.info(f"Scraping animal {idx}/{len(pet_cards)}: {pet_url}")
+
                             # Track URL
                             await url_repo.upsert(pet_url, URLType.ANIMAL)
 

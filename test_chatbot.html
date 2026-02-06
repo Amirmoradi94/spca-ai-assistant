@@ -1099,7 +1099,7 @@ Try asking about:
                         // Stats will auto-refresh every 3 seconds while polling is active
                     } else {
                         // Sync completed (old behavior for backwards compatibility)
-                        addSystemMessage(`✅ Sync completed (${syncName})! Files synced: ${result.synced || 'N/A'}`);
+                        addSystemMessage(`✅ Sync completed (${syncName})! Files synced: ${typeof result.synced === 'number' ? result.synced : 'N/A'}`);
                         addScraperLog(`✅ Sync completed (${syncName})!`, 'success');
                         addScraperLog(`📤 Files synced: ${result.synced || 0}`, 'success');
                         addScraperLog(`❌ Failed: ${result.failed || 0}`, result.failed > 0 ? 'warning' : 'info');

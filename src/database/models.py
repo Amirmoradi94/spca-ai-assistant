@@ -3,8 +3,10 @@
 from datetime import datetime
 from typing import Optional
 
+from datetime import date
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -187,3 +189,95 @@ class SyncLog(Base):
 
     def __repr__(self) -> str:
         return f"<SyncLog(id={self.id}, entity='{self.entity_type}:{self.entity_id}')>"
+
+
+class Conversation(Base):
+    """Model for tracking individual conversations/sessions."""
+
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    language: Mapped[str] = mapped_column(String(10), default="en", nullable=False, index=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)
+    user_ip_hash: Mapped[Optional[str]] = mapped_column(String(64))  # Privacy: hash IP, don't store raw
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500))
+    referrer: Mapped[Optional[str]] = mapped_column(String(500))
+
+    # Relationships
+    messages: Mapped[list["ConversationMessage"]] = relationship(
+        "ConversationMessage", back_populates="conversation", lazy="selectin", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index("ix_conversations_started_at", "started_at"),
+        Index("ix_conversations_language", "language"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Conversation(id={self.id}, session_id='{self.session_id}', messages={self.message_count})>"
+
+
+class ConversationMessage(Base):
+    """Model for storing individual messages in conversations."""
+
+    __tablename__ = "conversation_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    conversation_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # 'user' or 'assistant'
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)  # For assistant messages
+    sources_count: Mapped[Optional[int]] = mapped_column(Integer)  # Number of file search sources used
+    error_occurred: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Relationship
+    conversation: Mapped["Conversation"] = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (
+        Index("ix_conversation_messages_conversation_id", "conversation_id"),
+        Index("ix_conversation_messages_timestamp", "timestamp"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ConversationMessage(id={self.id}, role='{self.role}', conversation_id={self.conversation_id})>"
+
+
+class ConversationAnalytics(Base):
+    """Model for pre-aggregated analytics for fast dashboard queries."""
+
+    __tablename__ = "conversation_analytics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, unique=True, index=True)
+    total_conversations: Mapped[int] = mapped_column(Integer, default=0)
+    total_messages: Mapped[int] = mapped_column(Integer, default=0)
+    avg_messages_per_conversation: Mapped[float] = mapped_column(Integer, default=0.0)
+    avg_duration_seconds: Mapped[float] = mapped_column(Integer, default=0.0)
+    unique_sessions: Mapped[int] = mapped_column(Integer, default=0)
+    language_en: Mapped[int] = mapped_column(Integer, default=0)
+    language_fr: Mapped[int] = mapped_column(Integer, default=0)
+    # Topic categories (extracted via NLP/keywords)
+    topic_adoption: Mapped[int] = mapped_column(Integer, default=0)
+    topic_animals: Mapped[int] = mapped_column(Integer, default=0)
+    topic_services: Mapped[int] = mapped_column(Integer, default=0)
+    topic_hours_location: Mapped[int] = mapped_column(Integer, default=0)
+    topic_fees: Mapped[int] = mapped_column(Integer, default=0)
+    topic_general: Mapped[int] = mapped_column(Integer, default=0)
+
+    __table_args__ = (
+        Index("ix_conversation_analytics_date", "date"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ConversationAnalytics(id={self.id}, date='{self.date}', conversations={self.total_conversations})>"
